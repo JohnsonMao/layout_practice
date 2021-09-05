@@ -1,21 +1,30 @@
 .container {
-  width: 1200px;
+  width: 94%;
   margin: 0 auto;
-  
+  padding: 0 3%;
 }
 .fixed-top {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  padding: $space;
   z-index: 1000;
 }
 .navbar {
+  padding: 0;
+  background: $body-bg;
+  transition: .3s;
+
+  &.isTop {
+    background: transparent;
+    padding-top: $space;
+    padding-bottom: $space;
+  }
   .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
   }
 
   &__logo {
@@ -27,12 +36,64 @@
 .nav {
   display: flex;
   align-items: center;
+  
+  &.mobileMenu {
+    @media (max-width: 920px) {
+      display: block;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      text-align: center;
+      background: $body-bg;
+      clip-path: polygon(0 0, 100% 0, 100% 0, 0 0);
+      transition: .3s;
+    }
+  
+    &.active {
+      @media (max-width: 920px) {
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+      }
+    }
+  }
 
-  a,
+  &__link,
   button {
+    position: relative;
+    display: block;
     font-size: $font_size * 1.5;
     padding: $space * 1.25;
     color: inherit;
+    z-index: 1020;
+    &.active {
+      color: lighten($primary, 20);
+      &::before {
+        width: 100%;
+      }
+    }
+  }
+
+  &__link::before {
+    content: '';
+    position: absolute;
+    bottom: 20%;
+    left: 50%;
+    width: 0;
+    height: 5px;
+    background: lighten($primary, 20);
+    transform: translateX(-50%);
+    transition: .3s;
+  }
+  &__link:hover {
+    &::before {
+      width: 100%;
+    }
+  }
+  
+  &__btnGroup {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   button {
     background-color: transparent;
@@ -48,7 +109,52 @@
     }
   }
 }
+.btn-burger{
+  background-color: transparent;
+  border-color: transparent;
+  cursor: pointer;
+  padding: $space * 1.25;
+  @media (min-width: 920px) {
+    display: none;
+  }
+}
+.btn-burger-icon{
+  width: 32px;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+  transition: all .2s ease-in-out;
 
+  &::before,
+  &::after{
+      content: '';
+      position: absolute;
+      width: 32px;
+      height: 4px;
+      background: #fff;
+      border-radius: 2px;
+      transition: all .2s ease-in-out;
+  }
+  &::before{
+      transform: translate(-16px, -10px);
+  }
+  &::after{
+      transform: translate(-16px, 10px);
+  }
+}
+.btn-burger.open{
+  .btn-burger-icon{
+      transform: translateX(50px);
+      background: transparent;
+
+      &::before{
+          transform: rotate(-45deg) translate(-45px, -45px);
+      }
+      &::after{
+          transform: rotate(45deg) translate(-45px, 45px);
+      }
+  }
+}
 .banner {
   height: 100vh;
   width: 100%;
@@ -70,11 +176,19 @@
       letter-spacing: .25rem;
       font-size: $font_size * 6;
       font-weight: 900;
+      animation: slide 2s 1 ease-out;
+      @media (max-width: 567px) {
+        font-size: $font_size * 3;
+      }
     }
 
     h3 {
       font-size: $font_size * 3;
       font-weight: 500;
+      animation: slide 2s 1 ease-out;
+      @media (max-width: 567px) {
+        font-size: $font_size * 1.5;
+      }
     }
   }
 }
@@ -194,6 +308,25 @@
   }
 }
 
+footer.navbar {
+  .container {
+    @media (max-width: 567px) {
+      flex-direction: column;
+    }
+  }
+}
+
 .mb-5 {
   margin-bottom: $space * 5;
+}
+
+@keyframes slide {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

@@ -11,16 +11,21 @@
 </head>
 <body>
 
-  <nav class="navbar fixed-top">
+  <nav class="navbar fixed-top isTop" id="headerMenu">
     <div class="container">
       <h1><a href="#" class="navbar__logo">KUNG FU</a></h1>
-      <ul class="nav">
-        <li><a href="#">HOME</a></li>
-        <li><a href="#about">ABOUT</a></li>
-        <li><a href="#latest">LATEST</a></li>
-        <li><a href="#contact">CONTACT</a></li>
-        <li><button><i class="fab fa-facebook-f"></i></button></li>
-        <li><button><i class="fab fa-twitter"></i></button></li>
+      <button class="btn-burger" id="btn-burger" onclick="openMenu()" type="button">
+        <div class="btn-burger-icon"></div>
+      </button>
+      <ul class="nav mobileMenu" id="mobileMenu">
+        <li><a class="nav__link active" href="#">HOME</a></li>
+        <li><a class="nav__link" href="#about">ABOUT</a></li>
+        <li><a class="nav__link" href="#latest">LATEST</a></li>
+        <li><a class="nav__link" href="#contact">CONTACT</a></li>
+        <li class="nav__btnGroup">
+          <button><i class="fab fa-facebook-f"></i></button>
+          <button><i class="fab fa-twitter"></i></button>
+        </li>
       </ul>
     </div>
   </nav>
@@ -149,7 +154,6 @@
     </footer>
   </div>
 
-  <script>
-  </script>
+  <script src="./all.js"></script>
 </body>
 </html>
