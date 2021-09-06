@@ -207,6 +207,10 @@
     .col {
       padding: .5%;
       width: 24%;
+      @media (max-width: 768px) {
+        padding: 1%;
+        width: 48%;
+      }
     }
   }
 }
@@ -288,7 +292,7 @@
   }
 }
 
-.section {
+.title {
   position: relative;
   margin-bottom: $space * 3.5;
   padding-bottom: $space * 1.5;

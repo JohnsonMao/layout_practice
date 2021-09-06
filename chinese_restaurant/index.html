@@ -18,10 +18,10 @@
         <div class="btn-burger-icon"></div>
       </button>
       <ul class="nav mobileMenu" id="mobileMenu">
-        <li><a class="nav__link active" href="#">HOME</a></li>
-        <li><a class="nav__link" href="#about">ABOUT</a></li>
-        <li><a class="nav__link" href="#latest">LATEST</a></li>
-        <li><a class="nav__link" href="#contact">CONTACT</a></li>
+        <li><a class="nav__link active" onclick="openMenu()" href="#home">HOME</a></li>
+        <li><a class="nav__link" onclick="openMenu()" href="#about">ABOUT</a></li>
+        <li><a class="nav__link" onclick="openMenu()" href="#latest">LATEST</a></li>
+        <li><a class="nav__link" onclick="openMenu()" href="#contact">CONTACT</a></li>
         <li class="nav__btnGroup">
           <button><i class="fab fa-facebook-f"></i></button>
           <button><i class="fab fa-twitter"></i></button>
@@ -30,115 +30,119 @@
     </div>
   </nav>
 
-  <section class="banner mb-5">
+  <section class="banner section mb-5" id="home">
     <div class="banner__content">
       <h2>KUNG FU</h2>
       <h3>好功夫中華料理</h3>
     </div>
   </section>
 
-  <div class="container" id="about">
-    <ul class="row row-cols-2 mb-5">
-      <li class="col">
-        <div class="frame">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_01.png?raw=true" alt="about_img">
-          <div class="frame__content">
-            <h3>關於功夫家常菜</h3>
-            <p>
-              堅持嚴選當地食材，自然純淨的好味道<br/>
-              食材經過嚴格拔關，選用無瘦肉精豬肉及非基因改蔬果
-            </p>
+  <div class="container">
+    <section class="section" id="about">
+      <ul class="row row-cols-2 mb-5">
+        <li class="col">
+          <div class="frame">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_01.png?raw=true" alt="about_img">
+            <div class="frame__content">
+              <h3>關於功夫家常菜</h3>
+              <p>
+                堅持嚴選當地食材，自然純淨的好味道<br/>
+                食材經過嚴格拔關，選用無瘦肉精豬肉及非基因改蔬果
+              </p>
+            </div>
+          </a>
+        </li>
+        <li class="col">
+          <div class="frame">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_04.png?raw=true" alt="about_img">
+            <div class="frame__content">
+              <h3>關於功夫家常菜</h3>
+              <p>
+                堅持嚴選當地食材，自然純淨的好味道<br/>
+                食材經過嚴格拔關，選用無瘦肉精豬肉及非基因改蔬果
+              </p>
+            </div>
+          </a>
+        </li>
+        <li class="col">
+          <div class="frame">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_03.png?raw=true" alt="about_img">
+            <div class="frame__content">
+              <h3>繼承第三代家常菜</h3>
+              <p>
+                好功夫第三代，繼承家鄉味<br/>
+                延續60年老店，堅持選用當地食材<br/>
+                讓老饕安心食用，吃的健康原則
+              </p>
+            </div>
           </div>
-        </a>
-      </ldiv>
-      <li class="col">
-        <div class="frame">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_04.png?raw=true" alt="about_img">
-          <div class="frame__content">
-            <h3>關於功夫家常菜</h3>
-            <p>
-              堅持嚴選當地食材，自然純淨的好味道<br/>
-              食材經過嚴格拔關，選用無瘦肉精豬肉及非基因改蔬果
-            </p>
+        </li>
+        <li class="col">
+          <div class="frame">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_02.png?raw=true" alt="about_img">
+            <div class="frame__content">
+              <h3>繼承第三代家常菜</h3>
+              <p>
+                好功夫第三代，繼承家鄉味<br/>
+                延續60年老店，堅持選用當地食材<br/>
+                讓老饕安心食用，吃的健康原則
+              </p>
+            </div>
           </div>
-        </a>
-      </ldiv>
-      <li class="col">
-        <div class="frame">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_03.png?raw=true" alt="about_img">
-          <div class="frame__content">
-            <h3>繼承第三代家常菜</h3>
-            <p>
-              好功夫第三代，繼承家鄉味<br/>
-              延續60年老店，堅持選用當地食材<br/>
-              讓老饕安心食用，吃的健康原則
-            </p>
-          </div>
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/img_02.png?raw=true" alt="about_img">
-          <div class="frame__content">
-            <h3>繼承第三代家常菜</h3>
-            <p>
-              好功夫第三代，繼承家鄉味<br/>
-              延續60年老店，堅持選用當地食材<br/>
-              讓老饕安心食用，吃的健康原則
-            </p>
-          </div>
-        </div>
-      </li>
-    </ul>
+        </li>
+      </ul>
+    </section>
     
-    <h3 class="section" id="latest">LATEST</h3>
+    <section class="section" id="latest">
+      <h3 class="title">LATEST</h3>
+      <ul class="row row-cols-4 mb-5">
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/01.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/02.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/03.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/04.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/05.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/06.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/07.png?raw=true" alt="food">
+          </div>
+        </li>
+        <li class="col">
+          <div class="frame hover-show">
+            <img src="https://github.com/zz41354899/china-project-/blob/demo/img/08.png?raw=true" alt="food">
+          </div>
+        </li>
+      </ul>
+    </section>
 
-    <ul class="row row-cols-4 mb-5">
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/01.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/02.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/03.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/04.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/05.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/06.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/07.png?raw=true" alt="food">
-        </div>
-      </li>
-      <li class="col">
-        <div class="frame hover-show">
-          <img src="https://github.com/zz41354899/china-project-/blob/demo/img/08.png?raw=true" alt="food">
-        </div>
-      </li>
-    </ul>
-
-    <h3 class="section" id="contact">ACCESS</h3>
-
-    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.1612733494358!2d121.561978914789!3d25.028600444662366!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb4f3295411%3A0xe22c83cc3072222d!2z55yf5Yqf5aSr6aSK55Sf6aWF6aCt!5e0!3m2!1szh-TW!2stw!4v1630852824648!5m2!1szh-TW!2stw" width="100%" height="450" class="mb-5" loading="lazy"></iframe>
+    <section class="section" id="contact">
+      <h3 class="title">ACCESS</h3>
+      <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3615.1612733494358!2d121.561978914789!3d25.028600444662366!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3442abb4f3295411%3A0xe22c83cc3072222d!2z55yf5Yqf5aSr6aSK55Sf6aWF6aCt!5e0!3m2!1szh-TW!2stw!4v1630852824648!5m2!1szh-TW!2stw" width="100%" height="450" class="mb-5" loading="lazy"></iframe>
+    </section>
 
     <footer class="navbar">
       <div class="container">

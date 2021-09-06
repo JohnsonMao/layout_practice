@@ -287,6 +287,13 @@ img {
   width: 24%;
 }
 
+@media (max-width: 768px) {
+  .row-cols-4 .col {
+    padding: 1%;
+    width: 48%;
+  }
+}
+
 .frame {
   position: relative;
   width: 100%;
@@ -373,7 +380,7 @@ img {
   background: rgba(0, 0, 0, 0);
 }
 
-.section {
+.title {
   position: relative;
   margin-bottom: 3.5rem;
   padding-bottom: 1.5rem;
@@ -383,7 +390,7 @@ img {
   font-weight: 700;
 }
 
-.section::before {
+.title::before {
   content: '';
   position: absolute;
   bottom: 0;
