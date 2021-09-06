@@ -2,11 +2,17 @@
 
 版型皆出自 [zz41354899](https://github.com/zz41354899)，僅作練習切版
 
-增加 SCSS 熟練度
+## KUNG FU 中華餐廳 | [Demo](https://johnsonmao.github.io/layout_practice/chinese_restaurant/)
 
-## 內容使用
+![chinese_restaurant](https://i.imgur.com/ZpdIupr.png)
 
-字型使用 Google font 及 圖庫來自 unsplash、pexels
-https://fonts.google.com/
-https://unsplash.com/s/photos/chinese-food
-https://www.pexels.com/zh-tw/
+### 使用技術
+
+- SCSS
+- RWD
+- 自製漢堡選單 UI 動畫
+- Javascript 增加使用者體驗
+
+### 內容使用申明
+
+字型使用 [Google font](https://fonts.google.com/) 及 圖庫來自 [unsplash](https://unsplash.com/s/photos/chinese-food)、[pexels](https://www.pexels.com/zh-tw/)
