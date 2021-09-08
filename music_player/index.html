@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Music Player</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/meyer-reset/2.0/reset.min.css"/>
+    <link rel="stylesheet" href="./scss/all.css">
+  </head>
+  <body>
+
+    <div class="phone">
+      <header class="header">
+        <span>12:00</span>
+        <div class="battery">
+          <div class="battery__power"></div>
+        </div>
+      </header>
+
+      <div class="music">
+        <div class="music__img">
+          <img src="https://images.unsplash.com/photo-1524223353933-98521802a072?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=334&q=80" alt="cover">
+        </div>
+        <h1 class="music__author">name</h1>
+        <p class="music__title">Canon</p>
+
+        <div class="music__timer">
+          <div class="music__time">0:30</div>
+          <div class="music__totalTime">1:30</div>
+        </div>
+        
+        <div class="music__progress">
+          <div class="music__progress__current"></div>
+        </div>
+
+        <div class="music__btnGroup">
+          <button class="btn music__btnGroup__prevBtn"></button>
+          <button class="btn music__btnGroup__playBtn"></button>
+          <button class="btn music__btnGroup__nextBtn"></button>
+        </div>
+      </div>
+    </div>
+
+
+
+    <audio id="music">
+      <source 
+        src="https://orangefreesounds.com/wp-content/uploads/2017/12/Canon-d-piano-song.mp3?_=1" />
+    </audio>
+
+    <script>
+      const music = document.getElementById('music');
+
+      music.ontimeupdate = (e) => {
+        console.log(e);
+      };
+    </script>
+  </body>
+</html>

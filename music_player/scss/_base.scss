@@ -1,0 +1,22 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: $secondary;
+  color: $primary;
+  font-family: $font_family;
+}
+
+a {
+  text-decoration: none;
+}
+
+img {
+  display: block;
+}
