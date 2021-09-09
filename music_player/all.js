@@ -1,3 +1,15 @@
+/* time */
+const showTime = () => {
+  const nowTime = document.getElementById('nowTime');
+  const date = new Date();
+  const hour = date.getHours();
+  const min = date.getMinutes();
+  nowTime.innerHTML = `${hour} : ${min}`
+}
+setInterval(() => {
+  showTime()
+}, 1000);
+
 /* audio */
 const audio = document.getElementById('audio');
 
@@ -36,11 +48,9 @@ const changeMusic = (musicIndex) => {
 }
 changeMusic( musicIndex );
 
-console.log(audio)
-
 audio.ontimeupdate = () => {
   musicCurrentTime.innerHTML = formatSeconds( audio.currentTime );
-  currentProgress.style.width = `${musicCurrentTime / musicTotalTime}%`
+  playedProgress.style.width = `${audio.currentTime / audio.duration * 100}%`
 }
 
 /* play music */
