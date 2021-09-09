@@ -4,7 +4,7 @@
   max-height: 640px;
   width: 100%;
   height: 100%;
-  box-shadow: 5px 5px 15px rgba(#000, .3);
+  box-shadow: 5px 5px 15px $shadowColor;
 }
 .header {
   padding: 1%;
@@ -17,28 +17,29 @@
 }
 .battery {
   position: relative;
-  margin-right: 1px;
-  height: 8px;
-  width: 14px;
-  padding: 0 1px;
+  margin-right: 4px;
+  height: 12px;
+  width: 18px;
+  padding: 1px;
   background: $primary;
-  border: 1px solid $secondary;
-  border-radius: 1px;
+  border: 2px solid $secondary;
+  border-radius: 2px;
 
   &::after {
     content: '';
     position: absolute;
-    right: -2px;
+    right: -4px;
     top: 50%;
-    width: 2px;
-    height: 4px;
+    width: 3px;
+    height: 6px;
     background: $secondary;
     transform: translateY(-50%);
+    border-radius: 1px;
   }
 
   &__power {
-    height: 5px;
-    width: 10px;
+    height: 6px;
+    width: 12px;
     background: $secondary;
   }
 }
@@ -48,86 +49,221 @@
   flex-direction: column;
   align-items: center;
 
-  &__img {
-    position: relative;
-    margin-bottom: 15%;
-    width: 30%;
+  &__frame {
+    margin-bottom: 10%;
+    padding: 5%;
+    width: 40%;
     border-radius: 25%;
-    overflow: hidden;
-    
-    img {
-      position: absolute;
-      top: 0;
-      left: 0;
+    box-shadow: inset -3px -3px 3px $shadowColor,
+                      3px 3px 9px $shadowColor;
+
+    &__img {
+      position: relative;
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    
-    &::before {
-      display: block;
-      padding-top: 100%;
-      content: "";
+      border-radius: 25%;
+      overflow: hidden;
+      
+      img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      
+      &::before {
+        display: block;
+        padding-top: 100%;
+        content: "";
+      }
     }
   }
-
+  
   &__author {
     margin-bottom: 2%;
     font-size: $font_size * 2;
   }
 
   &__title {
-    margin-bottom: 15%;
+    margin-bottom: 8%;
     font-size: $font_size * 0.75;
   }
 
   &__timer {
-    margin-bottom: 1%;
+    margin-bottom: 2%;
     display: flex;
     justify-content: space-between;
-    width: 50%;
+    width: 60%;
   }
 
   &__progress {
-    margin-bottom: 15%;
-    width: 50%;
+    margin-bottom: 16%;
+    width: 60%;
     height: 10px;
     background: lighten($primary, 50);
     cursor: pointer;
 
-    &__current {
+    &__played {
       position: relative;
-      width: 33%;
       height: 10px;
       background: linear-gradient(to right, $primary,
                                     lighten($primary, 10) 100%);
-
-      &::after {
-        position: absolute;
-        top: 50%;
-        right: 0;
-        content: '';
-        width: 18px;
-        height: 18px;
-        background: $primary;
-        border-radius: 50%;
-        transform: translate(50%, -50%);
-        cursor: pointer;
-      }
+    }
+    &__current {
+      position: absolute;
+      top: 50%;
+      right: 0;
+      content: '';
+      width: 18px;
+      height: 18px;
+      background: $primary;
+      border-radius: 50%;
+      transform: translate(50%, -50%);
+      cursor: pointer;
     }
   }
 
   &__btnGroup{
-    width: 50%;
+    width: 60%;
     display: flex;
     justify-content: space-between;
-    margin-bottom: 20%;
+    margin-bottom: 22%;
+
+    &__prevBtn {
+      position: relative;
+
+      &::before,
+      &::after {
+        position: absolute;
+        content: '';
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 8px 13.9px 8px 0;
+        border-color: transparent $primary transparent transparent;
+        transform: translate(-50%, -50%);
+      }
+
+      &::before {
+        left: 35%;
+      }
+
+      &::after {
+        left: 55%;
+      }
+
+      &:hover {
+        &::before,
+        &::after {
+          animation: prev .3s infinite;
+        }
+      }
+    }
+    &__playBtn {
+      position: relative;
+
+      &::before,
+      &::after {
+        position: absolute;
+        content: '';
+        top: 50%;
+        width: 10px;
+        height: 20px;
+        background: $primary;
+        transform: translate(-50%, -50%);
+        transition: .3s;
+      }
+      &::before {
+        left: calc(56% - 5px);
+        clip-path: polygon(0 0, 100% 27%, 100% 73%, 0% 100%);
+      }
+      &::after {
+        left: calc(54% + 5px);
+        clip-path: polygon(0 23%, 100% 50%, 100% 50%, 0% 77%);
+      }
+
+      &.active {
+        &::before,
+        &::after {
+          clip-path: polygon(0 0, 50% 0, 50% 100%, 0% 100%);
+        }
+      }
+    }
+
+    &__nextBtn {
+      position: relative;
+
+      &::before,
+      &::after {
+        position: absolute;
+        content: '';
+        top: 50%;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 8px 0 8px 13.9px;
+        border-color: transparent transparent transparent $primary;
+        transform: translate(-50%, -50%);
+      }
+      &::before {
+        left: 65%;
+      }
+      &::after {
+        left: 45%;
+      }
+
+      &:hover {
+        &::before,
+        &::after {
+          animation: next .3s infinite;
+        }
+      }
+    }
   }
 }
 .btn {
-  padding: 30px;
-  background: $primary;
+  padding: 12%;
+  background: $secondary;
   border: none;
   border-radius: 50%;
   cursor: pointer;
+  box-shadow: inset -2px -2px 3px $shadowColor,
+                    3px 3px 9px $shadowColor;
+
+  &:active,
+  &.active {
+    box-shadow: inset 3px 3px 6px $shadowColor;
+  }
+}
+
+@keyframes next {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  33% {
+    transform: translate(-30%, -50%);
+  }
+  66% {
+    transform: translate(-70%, -50%);
+  }
+  100% {
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes prev {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  33% {
+    transform: translate(-70%, -50%);
+  }
+  66% {
+    transform: translate(-30%, -50%);
+  }
+  100% {
+    transform: translate(-50%, -50%);
+  }
 }
