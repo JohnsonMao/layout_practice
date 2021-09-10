@@ -6,8 +6,12 @@ const showTime = () => {
   const min = date.getMinutes();
   const ticking = parseInt( date.getTime() / 500 );
   ticking % 2 ? 
-    nowTime.innerHTML = `${hour} <i>:</i> ${min}` : 
-    nowTime.innerHTML = `${hour} <i class="ticking">:</i> ${min}`
+    nowTime.innerHTML = `
+    ${hour < 10 ? '0' + hour : hour} <i>:</i> ${min < 10 ? '0' + min : min}
+    ` : 
+    nowTime.innerHTML = `
+    ${hour < 10 ? '0' + hour : hour} <i class="ticking">:</i> ${min < 10 ? '0' + min : min}
+    `
 }
 setInterval(() => {
   showTime()
@@ -69,6 +73,8 @@ const prevMusic = () => {
   musicIndex > 0 ? musicIndex -= 1 : musicIndex = musicTotal - 1;
   changeMusic( musicIndex );
   playing ? playMusic() : null;
+  playedProgress.style.width = 0
+  currentProgress.style.left = 0
 }
 
 /* next music */
@@ -76,20 +82,37 @@ const nextMusic = () => {
   musicIndex < musicTotal - 1 ? musicIndex += 1 : musicIndex = 0;
   changeMusic( musicIndex );
   playing ? playMusic() : null;
+  playedProgress.style.width = 0
+  currentProgress.style.left = 0
 }
 
 /* handle music time */
 totalProgress.onclick = (e) => {
-  e.stopPropagation();
-  console.log(e)
-  audio.currentTime = e.offsetX / totalProgress.offsetWidth * audio.duration;
-  console.log(e.totalProgress.offsetX);
+  e.target.id === "currentProgress" ? null :
+    audio.currentTime = e.offsetX / totalProgress.offsetWidth * audio.duration;
 }
 
-currentProgress.onmouseleave = (e) => {
-  // console.log('down',e)
-  currentProgress.onmousemove = (e) => {
-    // console.log('move',e);
-    // audio.currentTime = e.offsetX / totalProgress.offsetWidth * audio.duration;
+let isDown = false;
+let startX
+let totalX = 0;
+
+currentProgress.addEventListener('mousedown',
+  function(e) {
+    isDown = true;
+    startX = e.path[1].offsetLeft;
+    totalX = e.path[1].offsetWidth;
+    document.addEventListener('mousemove', move)
+  }
+)
+document.addEventListener('mouseup', 
+  function() {
+    isDown = false;
+    document.removeEventListener('mousemove', move)
+  }
+)
+
+const move = (e) => {
+  if(isDown) {
+    audio.currentTime = (e.pageX - startX) / totalX * audio.duration; 
   }
 }
