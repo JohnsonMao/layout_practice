@@ -12,7 +12,7 @@
 
     <div class="phone">
       <header class="header">
-        <time id="nowTime">0 : 00</time>
+        <time id="nowTime">00 <i>:</i> 00</time>
         <div class="battery">
           <div class="battery__power"></div>
         </div>
@@ -35,18 +35,18 @@
         <div 
           id="totalProgress"
           class="music__progress"
-          onclick="handleMusic()"
-          >
+        >
           <div 
             id="playedProgress"
             class="music__progress__played"
             style="width: 0;"
             >
-            <div 
+          </div>
+          <div 
             id="currentProgress"
-              class="music__progress__current"
-              >
-            </div>
+            class="music__progress__current"
+            style="left: 0;"
+            >
           </div>
         </div>
 

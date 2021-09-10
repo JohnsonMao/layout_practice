@@ -4,11 +4,14 @@ const showTime = () => {
   const date = new Date();
   const hour = date.getHours();
   const min = date.getMinutes();
-  nowTime.innerHTML = `${hour} : ${min}`
+  const ticking = parseInt( date.getTime() / 500 );
+  ticking % 2 ? 
+    nowTime.innerHTML = `${hour} <i>:</i> ${min}` : 
+    nowTime.innerHTML = `${hour} <i class="ticking">:</i> ${min}`
 }
 setInterval(() => {
   showTime()
-}, 1000);
+}, 500);
 
 /* audio */
 const audio = document.getElementById('audio');
@@ -51,6 +54,7 @@ changeMusic( musicIndex );
 audio.ontimeupdate = () => {
   musicCurrentTime.innerHTML = formatSeconds( audio.currentTime );
   playedProgress.style.width = `${audio.currentTime / audio.duration * 100}%`
+  currentProgress.style.left = `${audio.currentTime / audio.duration * 100}%`
 }
 
 /* play music */
@@ -75,6 +79,17 @@ const nextMusic = () => {
 }
 
 /* handle music time */
-const handleMusic = () => {
-  console.log(playedProgress.offsetWidth, '/', totalProgress.offsetWidth)
+totalProgress.onclick = (e) => {
+  e.stopPropagation();
+  console.log(e)
+  audio.currentTime = e.offsetX / totalProgress.offsetWidth * audio.duration;
+  console.log(e.totalProgress.offsetX);
+}
+
+currentProgress.onmouseleave = (e) => {
+  // console.log('down',e)
+  currentProgress.onmousemove = (e) => {
+    // console.log('move',e);
+    // audio.currentTime = e.offsetX / totalProgress.offsetWidth * audio.duration;
+  }
 }

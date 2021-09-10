@@ -54,6 +54,10 @@ img {
   margin-bottom: 20%;
 }
 
+.ticking {
+  color: transparent;
+}
+
 .battery {
   position: relative;
   margin-right: 4px;
@@ -159,23 +163,23 @@ img {
 }
 
 .music__progress__played {
-  position: relative;
   height: 10px;
+  -webkit-transition: .3s;
+  transition: .3s;
   background: -webkit-gradient(linear, left top, right top, from(#454545), to(#5f5f5f));
   background: linear-gradient(to right, #454545, #5f5f5f 100%);
 }
 
 .music__progress__current {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  content: '';
+  position: relative;
   width: 18px;
   height: 18px;
   background: #454545;
   border-radius: 50%;
-  -webkit-transform: translate(50%, -50%);
-          transform: translate(50%, -50%);
+  -webkit-transform: translate(-50%, -75%);
+          transform: translate(-50%, -75%);
+  -webkit-transition: .3s;
+  transition: .3s;
   cursor: pointer;
 }
 
