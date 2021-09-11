@@ -2,7 +2,7 @@
 
 版型皆出自 [zz41354899](https://github.com/zz41354899)，僅作練習切版
 
-## KUNG FU 中華餐廳 | [Demo](https://johnsonmao.github.io/layout_practice/music_player/)
+## Music player UI 音樂撥放器 UI | [Demo](https://johnsonmao.github.io/layout_practice/music_player/)
 
 ![music_player](https://i.imgur.com/yxzYJKU.png)
 
