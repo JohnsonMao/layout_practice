@@ -1,0 +1,21 @@
+schema: spec-driven
+
+# Project context — 建立 artifact 時會提供給 AI
+context: |
+  Tech stack: TypeScript 5.7, Node 20.x, pnpm 10.x, Turborepo, Vitest.
+  Monorepo: pnpm workspace；apps/*（discord-bot、slack-bot）、packages/core、packages/provider/*；平台邏輯在 app 內，無 packages/platform.
+  Core 只定義型別與介面，不依賴 provider；apps 與 provider 依賴 core.
+  Domain: agent-relay — Discord/Slack 等平台接收指令，經 relay 呼叫 Cursor CLI 等 provider，回傳結果.
+  約束：遵循既有 turbo.json、pnpm-workspace.yaml；新 package 需符合 workspace 邊界.
+
+# Per-artifact 規則（可選）
+rules:
+  proposal:
+    - 需包含 Goals / Non-Goals
+    - 簡潔，聚焦單一 change 範圍
+  design:
+    - 需有 Context、Decisions、Risks/Trade-offs
+    - 依賴方向與邊界需寫清楚（core / platform / provider）
+  tasks:
+    - 任務可對應到單一 package 或單一檔案變更
+    - 建置順序：core → provider → platform/app
