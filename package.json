@@ -1,0 +1,18 @@
+{
+  "name": "agent-relay-root",
+  "private": true,
+  "packageManager": "pnpm@10.20.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "check": "turbo run build test",
+    "dev:discord": "pnpm --filter discord-bot dev",
+    "dev:slack": "pnpm --filter slack-bot dev",
+    "deploy:discord": "pnpm --filter discord-bot deploy-commands"
+  },
+  "devDependencies": {
+    "turbo": "catalog:dev",
+    "typescript": "catalog:dev"
+  }
+}
