@@ -44,7 +44,7 @@ describe('createCursorCliProvider', () => {
     const provider = createCursorCliProvider({ command: 'agent' })
     await provider.execute({ prompt: 'test prompt' })
 
-    expect(mockSpawn).toHaveBeenCalledWith('agent', ['-p', 'test prompt', '--output-format', 'json'], expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false }))
+    expect(mockSpawn).toHaveBeenCalledWith('agent', ['-p', 'test prompt', '--output-format', 'json', '--trust'], expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false }))
   })
 
   it('passes optional model and mode to CLI', async () => {
@@ -62,7 +62,7 @@ describe('createCursorCliProvider', () => {
     })
 
     expect(mockSpawn).toHaveBeenCalledWith('agent', [
-      '-p', 'x', '--output-format', 'json',
+      '-p', 'x', '--output-format', 'json', '--trust',
       '--model', 'gpt-5.2', '--mode', 'plan',
     ], expect.any(Object))
   })

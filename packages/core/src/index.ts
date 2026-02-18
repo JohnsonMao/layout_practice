@@ -1,11 +1,13 @@
 export type {
+  Provider,
+  RelayError,
   RelayRequest,
   RelayRequestOptions,
   RelayResponse,
-  RelayResponseSuccess,
   RelayResponseError,
-  RelayError,
-  Provider,
+  RelayResponseSuccess,
+  StreamChunk,
+  StreamingProvider,
 } from './types'
-export { createRelay } from './relay'
+export { createRelay, type Relay } from './relay'
 export { loadEnvFromRepoRoot, findRepoRoot } from './env'

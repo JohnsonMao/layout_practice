@@ -1,3 +1,3 @@
-import { data as askData } from './ask'
+import { data as promptData } from './prompt'
 
-export const commands = [askData]
+export const commands = [promptData]

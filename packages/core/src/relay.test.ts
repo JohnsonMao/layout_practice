@@ -40,4 +40,20 @@ describe('createRelay', () => {
       expect(result.error.message).toBe('provider failed')
     }
   })
+
+  it('runStream falls back to run when provider has no executeStream', async () => {
+    const response: RelayResponse = { success: true, result: 'stream fallback' }
+    const provider: Provider = {
+      execute: vi.fn().mockResolvedValue(response),
+    }
+    const relay = createRelay({ provider })
+    const chunks: unknown[] = []
+    for await (const c of relay.runStream({ prompt: 'hi' }))
+      chunks.push(c)
+
+    expect(chunks).toEqual([
+      { type: 'text', text: 'stream fallback' },
+      { type: 'done' },
+    ])
+  })
 })
