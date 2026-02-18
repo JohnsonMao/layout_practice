@@ -1,6 +1,10 @@
 # Spec: platform-discord
 
-## ADDED Requirements
+## Purpose
+
+Discord bot integration: register slash commands, send relay requests, post responses within Discord message limits, and read configuration from environment. The bot uses core relay types only and does not contain provider-specific logic.
+
+## Requirements
 
 ### Requirement: Slash command to trigger AI task
 

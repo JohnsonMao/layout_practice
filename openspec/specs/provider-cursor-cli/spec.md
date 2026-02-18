@@ -1,6 +1,10 @@
 # Spec: provider-cursor-cli
 
-## ADDED Requirements
+## Purpose
+
+Wrap the Cursor CLI in non-interactive mode: spawn the agent with the relay request prompt and options, parse JSON or raw output, return the relay response. Handle timeout and CLI-not-found errors.
+
+## Requirements
 
 ### Requirement: Execute via Cursor CLI non-interactive mode
 

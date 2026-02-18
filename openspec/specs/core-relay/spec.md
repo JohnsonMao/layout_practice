@@ -1,6 +1,10 @@
 # Spec: core-relay
 
-## ADDED Requirements
+## Purpose
+
+Define the canonical request/response contract and provider interface for the relay. The core coordinates a single flow: platform submits a request, relay invokes the configured provider, returns the response. Core does not depend on any concrete platform or provider.
+
+## Requirements
 
 ### Requirement: Relay request contract
 
