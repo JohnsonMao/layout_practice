@@ -73,58 +73,86 @@ The Discord bot SHALL register a slash command `/prompt` with a required prompt 
 
 #### Scenario: Thread as workspace
 
-- **WHEN** a thread has been created by /prompt and at least one response has been completed
-- **THEN** that thread SHALL be treated as a workspace with its own conversation history for follow-up messages
+- **WHEN** a thread is owned by this bot (thread.ownerId equals the bot's user id) and a session has been stored for that thread (threadId ↔ sessionId) after the stream has yielded a sessionId
+- **THEN** that thread SHALL be treated as a workspace for follow-up messages using the stored session (resume), and SHALL NOT use in-thread conversation history as prompt content
 
-### Requirement: Streaming response with throttle
+### Requirement: This-bot thread identification
 
-The bot SHALL use relay.runStream for /prompt (and for follow-up in thread). It SHALL update a single "processing" message at most once every 2 seconds with accumulated text, and SHALL handle tool_call chunks by posting an approval message (see tool approval). When the stream ends, if the full response exceeds Discord message length limit, the bot SHALL send multiple messages or delete the status message and send the full content in chunks.
+The bot SHALL treat a thread as a follow-up workspace only if the thread is owned by this application's bot. The bot SHALL determine this by comparing the thread's owner id (thread.ownerId) to the current client user id (e.g. client.user.id). Threads owned by other bots or users SHALL NOT be treated as follow-up targets.
 
-#### Scenario: Throttled updates
+#### Scenario: Thread owned by this bot
 
-- **WHEN** runStream yields text chunks
-- **THEN** the bot SHALL not edit the message more often than once per 2 seconds (except when flushing on tool_call, done, or error)
+- **WHEN** the thread owner id (thread.ownerId) equals the bot's user id
+- **THEN** the bot SHALL consider that thread eligible for follow-up (if a session is stored)
 
-#### Scenario: Long final response
+#### Scenario: Thread not owned by this bot
 
-- **WHEN** the stream ends with success and the full text exceeds the Discord message limit
-- **THEN** the bot SHALL remove or replace the status message and SHALL send the content in one or more messages each within the limit
+- **WHEN** the thread owner id is not the current bot's user id
+- **THEN** the bot SHALL NOT treat messages in that thread as follow-up prompts
+
+### Requirement: Thread-session persistence
+
+The bot SHALL persist the mapping from Discord thread id to provider session id (threadId ↔ sessionId) so that it survives process restart. When a /prompt run in a thread receives a system chunk with sessionId from the relay stream, the bot SHALL store that mapping (e.g. in SQLite) together with the thread's workspace path (cwd) if applicable. The bot SHALL use this stored mapping to resolve sessionId (and cwd) when handling follow-up messages in that thread. The bot SHALL determine "this bot's thread" by thread owner id (thread.ownerId equals the bot's user id).
+
+#### Scenario: Store session when stream yields sessionId
+
+- **WHEN** the relay stream yields a chunk of type system with sessionId during a /prompt run in a thread
+- **THEN** the bot SHALL persist the thread id, sessionId, and cwd for that thread (e.g. INSERT OR REPLACE into SQLite)
+
+#### Scenario: Resolve session for follow-up
+
+- **WHEN** a user sends a follow-up message in a thread and the bot checks for a stored session
+- **THEN** the bot SHALL look up sessionId (and cwd) for that thread id from the persistent store and SHALL use it for the relay request (resume)
+
+### Requirement: Streaming response and status message
+
+The bot SHALL use relay.runStream for /prompt (and for follow-up in thread). It SHALL maintain a single status message that is updated with stream progress: accumulated text, or tool_call progress (text assembled from toolName, isCompleted, isRejected: e.g. "tool calling: X", "tool done: X", "tool reject: X"). When the stream yields a system chunk (sessionId), the bot MAY update the status (e.g. show model or "連線中"). When a tool_call chunk has isCompleted true and the stream is not done, the bot SHALL send a new status message ("thinking") and use it for subsequent updates. When the stream ends (done or error), the bot SHALL remove the status message. The bot SHALL truncate status message content to fit Discord message length limits when editing.
+
+#### Scenario: Status updates during stream
+
+- **WHEN** runStream yields text or tool_call chunks
+- **THEN** the bot SHALL edit the current status message with the assembled content (or send a new "thinking" message after a tool_call isCompleted)
+
+#### Scenario: Stream end
+
+- **WHEN** the stream yields done or error
+- **THEN** the bot SHALL remove the status message and SHALL post an error message to the thread if the stream ended with error
 
 ### Requirement: Follow-up in thread
 
-The Discord bot SHALL listen for MessageCreate in threads that have an associated workspace (conversation history). When a non-bot user sends a message that does not start with "/", the bot SHALL treat it as a follow-up prompt: SHALL build a single prompt from the thread history plus the new message, SHALL call runStream with that prompt, and SHALL append the new user and assistant messages to the thread history on success.
+The Discord bot SHALL listen for MessageCreate in threads that are owned by this bot (thread.ownerId equals the bot's user id) and have a stored session (threadId ↔ sessionId in persistent store). When a non-bot user sends a message that does not start with "/", the bot SHALL treat it as a follow-up prompt: SHALL call runStream with the stored sessionId (resume) and the new message content only (SHALL NOT build or pass conversation history in the prompt), and SHALL stream the response in that thread.
 
 #### Scenario: Follow-up message
 
-- **WHEN** a user sends a normal message (no slash) in a thread that has history
-- **THEN** the bot SHALL run the relay with the full conversation context and SHALL stream the response in that thread and update history
+- **WHEN** a user sends a normal message (no slash) in a thread that is owned by this bot and has a stored session
+- **THEN** the bot SHALL run the relay with sessionId (resume) and the new message only, and SHALL stream the response in that thread
 
 #### Scenario: Ignore non-follow-up
 
-- **WHEN** a message is sent in a thread that has no history, or is from the bot, or is a slash command
+- **WHEN** a message is sent in a thread that has no stored session, or is not owned by this bot, or is from the bot, or is a slash command
 - **THEN** the bot SHALL NOT treat it as a follow-up prompt
 
-### Requirement: Tool call approval UI
+### Requirement: Tool call progress in status message
 
-When the stream yields a chunk of type tool_call, the bot SHALL post a message in the same thread describing the tool call and SHALL attach buttons (e.g. "核准" / "拒絕") with distinct customIds. When the user clicks a button, the bot SHALL reply (e.g. ephemeral) with a confirmation (e.g. "已核准" or "已拒絕"). The bot need not send the approval result back to the CLI in this change.
+When the stream yields a chunk of type tool_call, the bot SHALL edit the current status message to show tool progress. The bot SHALL assemble the display text from the chunk's toolName, isCompleted, and isRejected (e.g. "tool calling: shellToolCall", "tool done: shellToolCall", "tool reject: shellToolCall"). When the chunk has isCompleted true and more chunks may follow, the bot SHALL send a new "thinking" status message and use it for subsequent updates.
 
-#### Scenario: Show tool call and buttons
+#### Scenario: Show tool progress
 
 - **WHEN** runStream yields a tool_call chunk
-- **THEN** the bot SHALL send a message in the thread with the tool call info and interactive buttons for approve/reject
+- **THEN** the bot SHALL update the current status message with the assembled tool text (no separate message per tool call)
 
-#### Scenario: Button interaction
+#### Scenario: After tool completed
 
-- **WHEN** a user clicks the approve or reject button
-- **THEN** the bot SHALL acknowledge the interaction with a short confirmation message
+- **WHEN** a tool_call chunk has isCompleted true
+- **THEN** the bot SHALL send a new "thinking" status message so the next update (text or next tool) edits that message
 
 ### Requirement: Rate limiting
 
-The bot SHALL enforce a per-user rate limit (default: 5 requests per 60-second window) for relay-triggering actions: /ask, /prompt, and follow-up messages in thread. When the limit is exceeded, the bot SHALL respond with a user-facing message and SHALL NOT call the relay.
+The bot SHALL enforce a per-user rate limit (default: 5 requests per 60-second window) for relay-triggering actions: /prompt and follow-up messages in thread. When the limit is exceeded, the bot SHALL respond with a user-facing message and SHALL NOT call the relay.
 
 #### Scenario: Under limit
 
-- **WHEN** a user triggers /ask, /prompt, or a follow-up and has not exceeded the limit
+- **WHEN** a user triggers /prompt or a follow-up and has not exceeded the limit
 - **THEN** the bot SHALL proceed to call the relay and SHALL record the request for rate limit purposes
 
 #### Scenario: Over limit

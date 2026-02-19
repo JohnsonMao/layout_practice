@@ -79,7 +79,7 @@ The cursor-cli provider SHALL implement StreamingProvider by providing executeSt
 #### Scenario: Parse and yield tool_call
 
 - **WHEN** the CLI stdout emits a line that parses as JSON with type "tool_call"
-- **THEN** the provider SHALL yield a StreamChunk of type "tool_call" with toolCallId, name, and args as available
+- **THEN** the provider SHALL yield a StreamChunk of type "tool_call" (ToolCallStreamChunk) with toolName (from the tool key, e.g. shellToolCall), isCompleted (true when subtype is "completed"), and isRejected (true when result.rejected is present)
 
 #### Scenario: Process exit
 

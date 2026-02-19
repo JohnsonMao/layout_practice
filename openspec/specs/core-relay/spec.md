@@ -8,7 +8,7 @@ Define the canonical request/response contract and provider interface for the re
 
 ### Requirement: Relay request contract
 
-The system SHALL define a canonical request type used by platforms to submit AI tasks. The type MUST include a required prompt string and MAY include optional fields for model and mode.
+The system SHALL define a canonical request type used by platforms to submit AI tasks. The type MUST include a required prompt string and MAY include optional fields: cwd (working directory for the agent), sessionId (for provider resume), and options (e.g. model, mode).
 
 #### Scenario: Minimal request
 
@@ -19,6 +19,11 @@ The system SHALL define a canonical request type used by platforms to submit AI 
 
 - **WHEN** a platform sends a request with `prompt` and `options: { model, mode }`
 - **THEN** the relay SHALL pass those options to the provider unchanged (provider MAY ignore unsupported options)
+
+#### Scenario: Request with sessionId (resume)
+
+- **WHEN** a platform sends a request with `prompt` and `sessionId`
+- **THEN** the relay SHALL pass the request to the provider; the provider MAY use sessionId to resume (e.g. `--resume <sessionId>`)
 
 ### Requirement: Relay response contract
 
@@ -64,7 +69,7 @@ The core SHALL coordinate a single flow: receive a request from a platform, invo
 
 ### Requirement: Streaming protocol
 
-The core SHALL define a streaming chunk type (StreamChunk) and an optional StreamingProvider interface. StreamChunk MUST support at least: text (incremental content), tool_call (for approval UI), done, and error.
+The core SHALL define a streaming chunk type (StreamChunk) and an optional StreamingProvider interface. StreamChunk SHALL be a union of named chunk types: TextStreamChunk (incremental content), ToolCallStreamChunk (toolName, isCompleted, isRejected; consumer assembles display text), SystemStreamChunk (type 'system', sessionId; optional model), DoneStreamChunk, and ErrorStreamChunk.
 
 #### Scenario: StreamingProvider implemented
 
