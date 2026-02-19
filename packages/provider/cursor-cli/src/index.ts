@@ -8,4 +8,4 @@ export type {
   CursorStreamEvent,
   CursorThinkingEvent,
   CursorToolCallEvent,
-} from './stream-types'
+} from './types'

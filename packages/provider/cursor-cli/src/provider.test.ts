@@ -22,7 +22,7 @@ describe('createCursorCliProvider', () => {
       return child
     })
 
-    const provider = createCursorCliProvider({ command: 'agent', timeoutMs: 5000 })
+    const provider = createCursorCliProvider({ timeoutMs: 5000 })
     const result = await provider.execute({ prompt: 'hello' })
 
     expect(result).toHaveProperty('success')
@@ -41,7 +41,7 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'agent' })
+    const provider = createCursorCliProvider()
     await provider.execute({ prompt: 'test prompt' })
 
     expect(mockSpawn).toHaveBeenCalledWith('agent', ['-p', 'test prompt', '--output-format', 'json', '--trust'], expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false }))
@@ -55,7 +55,7 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'agent' })
+    const provider = createCursorCliProvider()
     await provider.execute({
       prompt: 'x',
       options: { model: 'gpt-5.2', mode: 'plan' },
@@ -75,7 +75,7 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'agent' })
+    const provider = createCursorCliProvider()
     const result = await provider.execute({ prompt: 'q' })
 
     expect(result.success).toBe(true)
@@ -91,7 +91,7 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'agent' })
+    const provider = createCursorCliProvider()
     const result = await provider.execute({ prompt: 'q' })
 
     expect(result.success).toBe(true)
@@ -107,7 +107,7 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'agent' })
+    const provider = createCursorCliProvider()
     const result = await provider.execute({ prompt: 'q' })
 
     expect(result.success).toBe(false)
@@ -131,11 +131,78 @@ describe('createCursorCliProvider', () => {
       kill: vi.fn(),
     }))
 
-    const provider = createCursorCliProvider({ command: 'nonexistent' })
+    const provider = createCursorCliProvider()
     const result = await provider.execute({ prompt: 'q' })
 
     expect(result.success).toBe(false)
     if (!result.success)
       expect(result.error.code).toBe('CURSOR_CLI_NOT_FOUND')
+  })
+
+  it('executeStream includes --resume when request.sessionId is set', async () => {
+    let captureArgs: string[] = []
+    mockSpawn.mockImplementation((_cmd: string, args: string[]) => {
+      captureArgs = args
+      return {
+        stdout: {
+          on: vi.fn((_ev: string, fn: (b: Buffer) => void) => {
+            fn(Buffer.from('{"type":"system","session_id":"existing-sid"}\n'))
+            fn(Buffer.from('{"type":"assistant","message":{"content":[{"text":"ok"}]}}\n'))
+            setTimeout(() => {
+              const onClose = (mockSpawn as ReturnType<typeof vi.fn>).mock.results[0]?.value?.on?.mock?.calls?.find((c: unknown[]) => c[0] === 'close')?.[1]
+              if (onClose)
+                onClose(0)
+            }, 0)
+          }),
+        },
+        stderr: { on: vi.fn() },
+        on: vi.fn(),
+        kill: vi.fn(),
+      }
+    })
+
+    const provider = createCursorCliProvider()
+    const chunks: unknown[] = []
+    for await (const c of provider.executeStream({
+      prompt: 'follow-up',
+      sessionId: 'existing-sid',
+    }))
+      chunks.push(c)
+
+    expect(captureArgs).toContain('--resume')
+    expect(captureArgs).toContain('existing-sid')
+    expect(captureArgs).toContain('-p')
+    expect(captureArgs).toContain('follow-up')
+    expect(chunks.some(c => typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system')).toBe(true)
+    expect(chunks.some(c => typeof c === 'object' && c !== null && (c as { type?: string }).type === 'done')).toBe(true)
+  })
+
+  it('executeStream yields system chunk when stdout has session_id', async () => {
+    mockSpawn.mockImplementation(() => ({
+      stdout: {
+        on: vi.fn((_ev: string, fn: (b: Buffer) => void) => {
+          fn(Buffer.from('{"type":"system","subtype":"init","session_id":"sid-from-stream"}\n'))
+          fn(Buffer.from('{"type":"assistant","message":{"content":[{"text":"hello"}]}}\n'))
+          setTimeout(() => {
+            const child = mockSpawn.mock.results[0]?.value
+            const onClose = child?.on?.mock?.calls?.find((c: unknown[]) => c[0] === 'close')?.[1]
+            if (onClose)
+              onClose(0)
+          }, 0)
+        }),
+      },
+      stderr: { on: vi.fn() },
+      on: vi.fn(),
+      kill: vi.fn(),
+    }))
+
+    const provider = createCursorCliProvider()
+    const chunks: unknown[] = []
+    for await (const c of provider.executeStream({ prompt: 'hi' }))
+      chunks.push(c)
+
+    const systemChunk = chunks.find(c => typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system')
+    expect(systemChunk).toEqual({ type: 'system', sessionId: 'sid-from-stream' })
+    expect(chunks.filter(c => typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system')).toHaveLength(1)
   })
 })

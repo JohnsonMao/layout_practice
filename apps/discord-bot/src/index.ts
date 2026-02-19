@@ -1,7 +1,4 @@
 import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  ButtonStyle,
   ChannelType,
   Client,
   Events,
@@ -12,20 +9,16 @@ import {
 } from 'discord.js'
 import { createRelay } from '@agent-relay/core'
 import { createCursorCliProvider } from '@agent-relay/provider-cursor-cli'
-import type { StreamChunk } from '@agent-relay/core'
-import { getConfig, truncateForDiscord, DISCORD_MESSAGE_MAX_LENGTH } from './config'
+import { getConfig, truncateForDiscord } from './config'
 import { createRateLimiter } from './rate-limit'
-import {
-  appendThreadMessage,
-  buildPromptFromHistory,
-  getThreadCwd,
-  getThreadHistory,
-  registerThread,
-} from './thread-workspace'
+import { getSession, setSession, deleteSession } from './thread-session-store'
 import { getWorkspacePath } from './workspace-config'
 
-const STREAM_THROTTLE_MS = 2000
 const RATE_LIMIT_PER_MIN = 5
+const THINKING_LABEL = '💭 思考中...'
+
+/** Thread IDs currently processing (no follow-up until done). */
+const processingThreadIds = new Set<string>()
 
 function main(): void {
   const { token } = getConfig()
@@ -40,69 +33,76 @@ function main(): void {
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
     ],
+    rest: { timeout: 30_000 },
   })
 
   client.once(Events.ClientReady, c => {
     console.log(`Logged in as ${c.user.tag}.`)
   })
 
-  /** Send long text as one or more messages (split by 2000). */
-  async function sendLongContent(channel: ThreadChannel, text: string): Promise<Message[]> {
-    const out: Message[] = []
-    for (let i = 0; i < text.length; i += DISCORD_MESSAGE_MAX_LENGTH) {
-      const chunk = text.slice(i, i + DISCORD_MESSAGE_MAX_LENGTH)
-      const msg = await channel.send(chunk)
-      out.push(msg)
-    }
-    return out
-  }
-
-  /** Run stream with 2s throttle; update `updateMessage` with accumulated text; on tool_call call `onToolCall`. */
+  /**
+   * Stream flow: per chunk type edit current status message, optionally send new THINKING_LABEL; on done/error remove status message.
+   */
   async function runStreamWithThrottle(
     prompt: string,
-    updateMessage: (content: string) => Promise<void>,
-    onToolCall: (chunk: Extract<StreamChunk, { type: 'tool_call' }>) => Promise<void>,
-    cwd?: string,
-  ): Promise<{ success: boolean; fullText: string; error?: string }> {
-    let buffer = ''
-    let lastEdit = 0
-    let fullText = ''
-    let done = false
+    options: {
+      thread: ThreadChannel
+      statusMsgRef: { current: Message }
+      cwd?: string
+      sessionId?: string
+      onSession?: (sessionId: string) => void
+    },
+  ): Promise<{ success: boolean; error?: string }> {
+    const { thread, statusMsgRef, cwd, sessionId, onSession } = options
     let errorMsg: string | undefined
 
-    const flush = async (force = false) => {
-      const now = Date.now()
-      if (!force && now - lastEdit < STREAM_THROTTLE_MS && !done)
-        return
-      lastEdit = now
-      if (buffer.length > 0)
-        await updateMessage(truncateForDiscord(buffer))
+    const editThenNewThinking = async (content: string) => {
+      await statusMsgRef.current.edit(truncateForDiscord(content)).catch(() => {})
+      statusMsgRef.current = await thread.send(THINKING_LABEL)
     }
 
-    const request = { prompt, ...(cwd !== undefined && cwd !== '' && { cwd }) }
+    const request = {
+      prompt,
+      ...(cwd !== undefined && cwd !== '' && { cwd }),
+      ...(sessionId !== undefined && sessionId !== '' && { sessionId }),
+    }
     for await (const chunk of relay.runStream(request)) {
-      if (chunk.type === 'text') {
-        buffer += chunk.text
-        fullText += chunk.text
-        await flush()
-      }
-      if (chunk.type === 'tool_call') {
-        await flush(true)
-        await onToolCall(chunk)
-      }
-      if (chunk.type === 'done') {
-        done = true
-        await flush(true)
-        break
-      }
-      if (chunk.type === 'error') {
-        done = true
-        errorMsg = `${chunk.error.code}: ${chunk.error.message}`
-        await flush(true)
-        break
+      switch (chunk.type) {
+        case 'system': {
+          onSession?.(chunk.sessionId)
+          const modelLabel = chunk.model ? `使用 model: ${chunk.model}` : '連線中…'
+          await statusMsgRef.current.edit(truncateForDiscord(modelLabel)).catch(() => {})
+          statusMsgRef.current = await thread.send(THINKING_LABEL)
+          break
+        }
+        case 'text':
+          await editThenNewThinking(chunk.text)
+          break
+        case 'tool_call': {
+          const name = chunk.toolName ?? 'tool'
+          if (!chunk.isCompleted) {
+            await statusMsgRef.current.edit(truncateForDiscord(`tool calling: ${name}`)).catch(() => {})
+          }
+          else if (chunk.isRejected) {
+            await statusMsgRef.current.edit(truncateForDiscord(`tool rejected: ${name}`)).catch(() => {})
+            statusMsgRef.current = await thread.send(THINKING_LABEL)
+          }
+          else {
+            await statusMsgRef.current.edit(truncateForDiscord(`tool done: ${name}`)).catch(() => {})
+            statusMsgRef.current = await thread.send(THINKING_LABEL)
+          }
+          break
+        }
+        case 'done':
+          await statusMsgRef.current.delete().catch(() => {})
+          return { success: true, error: errorMsg }
+        case 'error':
+          errorMsg = `${chunk.error.code}: ${chunk.error.message}`
+          await statusMsgRef.current.delete().catch(() => {})
+          return { success: false, error: errorMsg }
       }
     }
-    return { success: !errorMsg, fullText, error: errorMsg }
+    return { success: !errorMsg, error: errorMsg }
   }
 
   /** Handle /prompt: create thread, stream in thread, register for follow-up. */
@@ -126,58 +126,33 @@ function main(): void {
       type: ChannelType.PublicThread,
       reason: 'Prompt thread',
     })
-    registerThread(thread.id, cwd)
     await deferEditReply(`已建立討論串：<#${thread.id}>`)
 
-    const statusMsg = await thread.send('⏳ 正在處理…')
-    const updateStatus = async (content: string) => {
-      await statusMsg.edit(content || '⏳ 正在處理…').catch(() => {})
-    }
+    processingThreadIds.add(thread.id)
+    const statusMsgRef = { current: await thread.send(THINKING_LABEL) }
 
-    const onToolCall = async (chunk: Extract<StreamChunk, { type: 'tool_call' }>) => {
-      const label = [chunk.name, chunk.args].filter(Boolean).join(' ')
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`tool_approve:${chunk.toolCallId ?? ''}`)
-          .setLabel('核准')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId(`tool_reject:${chunk.toolCallId ?? ''}`)
-          .setLabel('拒絕')
-          .setStyle(ButtonStyle.Danger),
-      )
-      await thread.send({
-        content: `🔧 **工具呼叫**${label ? `: ${label}` : ''}\n請選擇核准或拒絕。`,
-        components: [row],
+    try {
+      const { success, error } = await runStreamWithThrottle(prompt, {
+        thread,
+        statusMsgRef,
+        cwd,
+        onSession: sessionId => void setSession(thread.id, sessionId, cwd),
       })
-    }
 
-    const { success, fullText, error } = await runStreamWithThrottle(
-      prompt,
-      updateStatus,
-      onToolCall,
-      cwd,
-    )
-
-    if (success) {
-      appendThreadMessage(thread.id, 'user', prompt)
-      appendThreadMessage(thread.id, 'assistant', fullText)
-      const displayText = fullText.trim() || '（完成，無文字輸出）'
-      if (displayText.length <= DISCORD_MESSAGE_MAX_LENGTH)
-        await statusMsg.edit(truncateForDiscord(displayText)).catch(() => {})
-      else
-        await statusMsg.delete().catch(() => {}) && await sendLongContent(thread, fullText)
+      if (!success)
+        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}`).catch(() => {})
     }
-    else {
-      await statusMsg.edit(`❌ ${truncateForDiscord(error ?? 'Unknown error')}`).catch(() => {})
+    finally {
+      processingThreadIds.delete(thread.id)
     }
   }
 
-  /** Handle follow-up message in a registered thread. */
+  /** Handle follow-up message in a thread that has a stored session (resume). */
   async function handleThreadFollowUp(
     thread: ThreadChannel,
     content: string,
     userId: string,
+    session: { sessionId: string; cwd: string },
   ): Promise<void> {
     if (!rateLimiter.check(userId)) {
       await thread.send('⏱️ 請求過於頻繁，請稍後再試（每分鐘最多 5 次）。').catch(() => {})
@@ -185,51 +160,30 @@ function main(): void {
     }
     rateLimiter.record(userId)
 
-    const history = getThreadHistory(thread.id)
-    const prompt = buildPromptFromHistory(history, content)
-    appendThreadMessage(thread.id, 'user', content)
+    processingThreadIds.add(thread.id)
+    const statusMsgRef = { current: await thread.send(THINKING_LABEL) }
 
-    const statusMsg = await thread.send('⏳ 正在處理…')
-    const updateStatus = async (text: string) => {
-      await statusMsg.edit(text || '⏳ 正在處理…').catch(() => {})
-    }
-    const onToolCall = async (chunk: Extract<StreamChunk, { type: 'tool_call' }>) => {
-      const label = [chunk.name, chunk.args].filter(Boolean).join(' ')
-      const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(`tool_approve:${chunk.toolCallId ?? ''}`)
-          .setLabel('核准')
-          .setStyle(ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId(`tool_reject:${chunk.toolCallId ?? ''}`)
-          .setLabel('拒絕')
-          .setStyle(ButtonStyle.Danger),
-      )
-      await thread.send({
-        content: `🔧 **工具呼叫**${label ? `: ${label}` : ''}\n請選擇核准或拒絕。`,
-        components: [row],
+    try {
+      const { success, error } = await runStreamWithThrottle(content, {
+        thread,
+        statusMsgRef,
+        cwd: session.cwd,
+        sessionId: session.sessionId,
       })
-    }
 
-    const cwd = getThreadCwd(thread.id)
-    const { success, fullText, error } = await runStreamWithThrottle(
-      prompt,
-      updateStatus,
-      onToolCall,
-      cwd,
-    )
+      if (!success) {
+        await deleteSession(thread.id)
+        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}\n如需繼續對話，請在此討論串使用 \`/prompt\` 重新開始。`).catch(() => {})
+      }
+    }
+    finally {
+      processingThreadIds.delete(thread.id)
+    }
+  }
 
-    if (success) {
-      appendThreadMessage(thread.id, 'assistant', fullText)
-      const displayText = fullText.trim() || '（完成，無文字輸出）'
-      if (displayText.length <= DISCORD_MESSAGE_MAX_LENGTH)
-        await statusMsg.edit(truncateForDiscord(displayText)).catch(() => {})
-      else
-        await statusMsg.delete().catch(() => {}) && await sendLongContent(thread, fullText)
-    }
-    else {
-      await statusMsg.edit(`❌ ${truncateForDiscord(error ?? 'Unknown error')}`).catch(() => {})
-    }
+  /** True if the thread was created/owned by this bot (same application). */
+  function isThreadOwnedByThisBot(thread: ThreadChannel, botUserId: string): boolean {
+    return thread.ownerId === botUserId
   }
 
   client.on(Events.InteractionCreate, async interaction => {
@@ -255,17 +209,6 @@ function main(): void {
       }
     }
 
-    if (interaction.isButton()) {
-      const [action] = interaction.customId.split(':')
-      if (action === 'tool_approve') {
-        await interaction.reply({ content: '✅ 已核准', ephemeral: true })
-        return
-      }
-      if (action === 'tool_reject') {
-        await interaction.reply({ content: '❌ 已拒絕', ephemeral: true })
-        return
-      }
-    }
   })
 
   client.on(Events.MessageCreate, async message => {
@@ -275,16 +218,26 @@ function main(): void {
     if (!channel.isThread())
       return
     const thread = channel
-    const history = getThreadHistory(thread.id)
-    if (history.length === 0)
+    const botUserId = client.user?.id
+    if (!botUserId || !isThreadOwnedByThisBot(thread, botUserId))
+      return
+    if (processingThreadIds.has(thread.id))
+      return
+    const session = await getSession(thread.id)
+    if (!session)
       return
     const content = message.content?.trim()
     if (!content || content.startsWith('/'))
       return
-    await handleThreadFollowUp(thread, content, message.author.id)
+    await handleThreadFollowUp(thread, content, message.author.id, session)
   })
 
-  client.login(token)
+  client.login(token).catch((err: unknown) => {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('無法連線到 Discord。若為 Connect Timeout，請檢查網路、防火牆或 VPN 是否阻擋對 Discord 的連線。')
+    console.error(msg)
+    process.exit(1)
+  })
 }
 
 main()

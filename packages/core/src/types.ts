@@ -9,6 +9,8 @@ export interface RelayRequest {
   prompt: string
   /** Working directory for the agent (e.g. project root). Omit to use process cwd. */
   cwd?: string
+  /** Cursor session id for resume (e.g. from Cursor CLI stream). When set, provider may use --resume. */
+  sessionId?: string
   options?: RelayRequestOptions
 }
 
@@ -37,12 +39,44 @@ export interface Provider {
   execute(request: RelayRequest): Promise<RelayResponse>
 }
 
-/** Stream chunk: incremental text or tool call for approval. */
+/** Incremental assistant text. */
+export interface TextStreamChunk {
+  type: 'text'
+  text: string
+}
+
+/** Tool call payload: tool name and completion/rejection flags; consumer assembles display text. */
+export interface ToolCallStreamChunk {
+  type: 'tool_call'
+  toolName?: string
+  isCompleted?: boolean
+  isRejected?: boolean
+}
+
+/** System event, e.g. session_id for storing. */
+export interface SystemStreamChunk {
+  type: 'system'
+  sessionId: string
+  model?: string
+}
+
+/** Stream ended successfully. */
+export interface DoneStreamChunk {
+  type: 'done'
+}
+
+/** Stream ended with error. */
+export interface ErrorStreamChunk {
+  type: 'error'
+  error: RelayError
+}
+
 export type StreamChunk =
-  | { type: 'text'; text: string }
-  | { type: 'tool_call'; toolCallId?: string; name?: string; args?: string }
-  | { type: 'done' }
-  | { type: 'error'; error: RelayError }
+  | TextStreamChunk
+  | ToolCallStreamChunk
+  | SystemStreamChunk
+  | DoneStreamChunk
+  | ErrorStreamChunk
 
 /** Optional streaming: provider may implement to support runStream. */
 export interface StreamingProvider extends Provider {

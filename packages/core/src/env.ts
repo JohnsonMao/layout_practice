@@ -3,8 +3,8 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 /**
- * 從給定目錄往上找含 pnpm-workspace.yaml 的 repo 根目錄；
- * 找不到則回傳 startDir。
+ * Walk up from the given directory to find the repo root containing pnpm-workspace.yaml;
+ * returns startDir if not found.
  */
 export function findRepoRoot(startDir: string): string {
   let dir = resolve(startDir)
@@ -18,8 +18,8 @@ export function findRepoRoot(startDir: string): string {
 }
 
 /**
- * 從 repo 根目錄載入 .env（由 process.cwd() 往上找 pnpm-workspace.yaml）。
- * 各 app 在讀取 process.env 前呼叫一次即可，無需重複實作。
+ * Load .env from repo root (found by walking up from process.cwd() for pnpm-workspace.yaml).
+ * Call once per app before reading process.env; no need to duplicate in each app.
  */
 export function loadEnvFromRepoRoot(): void {
   const root = findRepoRoot(process.cwd())

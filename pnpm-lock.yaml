@@ -9,6 +9,9 @@ catalogs:
     '@types/node':
       specifier: ^22.0.0
       version: 22.19.11
+    '@types/sql.js':
+      specifier: ^1.4.9
+      version: 1.4.9
     tsup:
       specifier: ^8.3.5
       version: 8.5.1
@@ -31,6 +34,9 @@ catalogs:
     dotenv:
       specifier: ^17.3.1
       version: 17.3.1
+    sql.js:
+      specifier: ^1.14.0
+      version: 1.14.0
 
 importers:
 
@@ -57,10 +63,16 @@ importers:
       dotenv:
         specifier: catalog:prod
         version: 17.3.1
+      sql.js:
+        specifier: catalog:prod
+        version: 1.14.0
     devDependencies:
       '@types/node':
         specifier: catalog:dev
         version: 22.19.11
+      '@types/sql.js':
+        specifier: catalog:dev
+        version: 1.4.9
       tsup:
         specifier: catalog:dev
         version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
@@ -70,6 +82,9 @@ importers:
       typescript:
         specifier: catalog:dev
         version: 5.9.3
+      vitest:
+        specifier: catalog:dev
+        version: 2.1.9(@types/node@22.19.11)
 
   packages/core:
     dependencies:
@@ -583,11 +598,17 @@ packages:
     resolution: {integrity: sha512-jjmJywLAFoWeBi1W7994zZyiNWPIiqRRNAmSERxyg93xRGzNYvGjlZ0gR6x0F4gPRi2+0O6S71kOZYyr3cxaIQ==}
     engines: {node: '>=v14.0.0', npm: '>=7.0.0'}
 
+  '@types/emscripten@1.41.5':
+    resolution: {integrity: sha512-cMQm7pxu6BxtHyqJ7mQZ2kXWV5SLmugybFdHCBbJ5eHzOo6VhBckEgAT3//rP5FwPHNPeEiq4SmQ5ucBwsOo4Q==}
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
   '@types/node@22.19.11':
     resolution: {integrity: sha512-BH7YwL6rA93ReqeQS1c4bsPpcfOmJasG+Fkr6Y59q83f9M1WcBRHR2vM+P9eOisYRcN3ujQoiZY8uk5W+1WL8w==}
+
+  '@types/sql.js@1.4.9':
+    resolution: {integrity: sha512-ep8b36RKHlgWPqjNG9ToUrPiwkhwh0AEzy883mO5Xnd+cL6VBH1EvSjBAAuxLUFF2Vn/moE3Me6v9E1Lo+48GQ==}
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
@@ -857,6 +878,9 @@ packages:
   source-map@0.7.6:
     resolution: {integrity: sha512-i5uvt8C3ikiWeNZSVZNWcfZPItFQOsYTUAOkcUPGd8DqDy1uOUikjt5dG+uRlwyvR108Fb9DOd4GvXfT0N2/uQ==}
     engines: {node: '>= 12'}
+
+  sql.js@1.14.0:
+    resolution: {integrity: sha512-NXYh+kFqLiYRCNAaHD0PcbjFgXyjuolEKLMk5vRt2DgPENtF1kkNzzMlg42dUk5wIsH8MhUzsRhaUxIisoSlZQ==}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -1358,11 +1382,18 @@ snapshots:
 
   '@sapphire/snowflake@3.5.3': {}
 
+  '@types/emscripten@1.41.5': {}
+
   '@types/estree@1.0.8': {}
 
   '@types/node@22.19.11':
     dependencies:
       undici-types: 6.21.0
+
+  '@types/sql.js@1.4.9':
+    dependencies:
+      '@types/emscripten': 1.41.5
+      '@types/node': 22.19.11
 
   '@types/ws@8.18.1':
     dependencies:
@@ -1666,6 +1697,8 @@ snapshots:
   source-map-js@1.2.1: {}
 
   source-map@0.7.6: {}
+
+  sql.js@1.14.0: {}
 
   stackback@0.0.2: {}
 

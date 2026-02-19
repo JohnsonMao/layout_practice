@@ -1,15 +1,15 @@
 /**
- * Cursor CLI stream-json 輸出事件型別（NDJSON 每行一筆）。
- * 依實際 agent 輸出定義，供 parseStreamLine 與後續擴充使用。
+ * Cursor CLI stream-json event types (one NDJSON line per event).
+ * Defined from actual agent output; used by parseStreamLine and extensions.
  */
 
-/** 訊息內容區塊：多為 { type: "text", text: string } */
+/** Message content part: usually { type: "text", text: string }. */
 export interface CursorContentPart {
   type?: string
   text?: string
 }
 
-/** message 欄位：role + content 陣列 */
+/** message field: role + content array. */
 export interface CursorMessage {
   role?: string
   content?: CursorContentPart[]
@@ -42,7 +42,7 @@ export interface CursorThinkingEvent {
   timestamp_ms?: number
 }
 
-/** type: "assistant" — 主要回覆內容在 message.content */
+/** type: "assistant" — main reply content in message.content */
 export interface CursorAssistantEvent {
   type: 'assistant'
   message?: CursorMessage
@@ -56,12 +56,22 @@ export interface CursorToolCallEvent {
   type: 'tool_call'
   subtype?: 'started' | 'completed'
   call_id?: string
-  tool_call?: Record<string, unknown>
+  tool_call?: CursorToolCallMap
   session_id?: string
   timestamp_ms?: number
 }
 
-/** type: "result", subtype: "success" — 結尾摘要，含完整 result 文字 */
+/** Per-tool payload in tool_call: started has args, completed has result. Shared shape for all MCP tools. */
+export interface CursorToolCallPayload {
+  args?: Record<string, unknown>
+  result?: { success?: unknown; rejected?: unknown }
+}
+
+export interface CursorToolCallMap {
+  [key: string]: CursorToolCallPayload
+}
+
+/** type: "result", subtype: "success" — final summary with full result text */
 export interface CursorResultEvent {
   type: 'result'
   subtype?: 'success'

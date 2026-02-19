@@ -15,7 +15,7 @@ export const data = new SlashCommandBuilder()
   .addStringOption(option => {
     const opt = option
       .setName('workspace')
-      .setDescription('專案目錄（執行 Cursor 的工作目錄）；不選則使用 default')
+      .setDescription('Project directory (Cursor working directory); omit to use default')
       .setRequired(false)
     if (workspaceChoices.length > 0)
       opt.addChoices(...workspaceChoices)

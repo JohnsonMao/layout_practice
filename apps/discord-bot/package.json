@@ -8,18 +8,22 @@
     "build": "tsup",
     "dev": "node --import tsx src/index.ts",
     "start": "node dist/index.js",
-    "deploy-commands": "node dist/deploy-commands.js"
+    "deploy-commands": "node dist/deploy-commands.js",
+    "test": "vitest"
   },
   "dependencies": {
     "@agent-relay/core": "workspace:*",
     "@agent-relay/provider-cursor-cli": "workspace:*",
     "discord.js": "catalog:prod",
-    "dotenv": "catalog:prod"
+    "dotenv": "catalog:prod",
+    "sql.js": "catalog:prod"
   },
   "devDependencies": {
     "@types/node": "catalog:dev",
+    "@types/sql.js": "catalog:dev",
     "tsup": "catalog:dev",
     "tsx": "catalog:dev",
-    "typescript": "catalog:dev"
+    "typescript": "catalog:dev",
+    "vitest": "catalog:dev"
   }
 }

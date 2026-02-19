@@ -1,14 +1,14 @@
 import { spawn } from 'node:child_process'
 import type { RelayRequest, RelayResponse, StreamChunk, StreamingProvider } from '@agent-relay/core'
-import type { CursorAssistantEvent, CursorStreamEvent, CursorToolCallEvent } from './stream-types'
+import type { CursorResultEvent, CursorStreamEvent } from './types'
 
 export const CURSOR_CLI_NOT_FOUND = 'CURSOR_CLI_NOT_FOUND'
 export const CURSOR_CLI_TIMEOUT = 'CURSOR_CLI_TIMEOUT'
 export const CURSOR_CLI_EXIT_ERROR = 'CURSOR_CLI_EXIT_ERROR'
 
+const CURSOR_CLI_COMMAND = 'agent'
+
 export interface CursorCliProviderConfig {
-  /** CLI command (default: "agent") */
-  command?: string
   /** Timeout in ms (default: 120_000) */
   timeoutMs?: number
 }
@@ -24,7 +24,10 @@ function buildArgs(request: RelayRequest): string[] {
 }
 
 function buildStreamArgs(request: RelayRequest): string[] {
-  const args = ['-p', request.prompt, '--output-format', 'stream-json', '--trust']
+  const args: string[] = []
+  if (request.sessionId)
+    args.push('--resume', request.sessionId)
+  args.push('-p', request.prompt, '--force', '--approve-mcps', '--output-format', 'stream-json', '--trust')
   const opts = request.options
   if (opts?.model)
     args.push('--model', opts.model)
@@ -33,55 +36,49 @@ function buildStreamArgs(request: RelayRequest): string[] {
   return args
 }
 
-function extractTextFromContent(content: unknown): string {
-  if (typeof content === 'string')
-    return content
-  if (Array.isArray(content)) {
-    return content.map((part: unknown) => {
-      if (typeof part === 'object' && part !== null && 'text' in part)
-        return String((part as { text: unknown }).text)
-      return ''
-    }).filter(Boolean).join('')
-  }
-  if (typeof content === 'object' && content !== null && 'text' in content)
-    return String((content as { text: unknown }).text)
-  return ''
-}
-
-/** Parse one NDJSON line into a StreamChunk or null if not applicable. */
+/** Parse one NDJSON line. Returns a single chunk or null. Only type "system" emits system chunk (session_id for storing). */
 function parseStreamLine(line: string): StreamChunk | null {
   const trimmed = line.trim()
   if (!trimmed)
     return null
   try {
-    const obj = JSON.parse(trimmed) as CursorStreamEvent
+    const event = JSON.parse(trimmed) as CursorStreamEvent
 
-    if (obj.type === 'assistant') {
-      const ev = obj as CursorAssistantEvent
-      const o = obj as unknown as Record<string, unknown>
-      const content = ev.message?.content ?? o.content ?? o.text ?? o.delta
-      const text = extractTextFromContent(content) || (typeof o.delta === 'string' ? o.delta : '')
-      if (text)
-        return { type: 'text', text }
-    }
-    const o = obj as unknown as Record<string, unknown>
-    if (o.type === 'message' || o.type === 'response') {
-      const content = (o.message as Record<string, unknown> | undefined)?.content ?? o.content ?? o.text ?? o.delta
-      const text = extractTextFromContent(content) || (typeof o.delta === 'string' ? o.delta : '')
-      if (text)
-        return { type: 'text', text }
-    }
-    if (obj.type === 'tool_call') {
-      const ev = obj as CursorToolCallEvent
-      const name = (o.name ?? o.tool_name ?? ev.subtype) as string | undefined
-      const args = o.args ?? o.arguments
-      return {
-        type: 'tool_call',
-        toolCallId: (o.id ?? ev.call_id) as string | undefined,
-        name,
-        args: args !== undefined ? JSON.stringify(args) : undefined,
+    switch (event.type) {
+      case 'system': {
+        const sessionId = event.session_id
+        const model = event.model
+        if (typeof sessionId === 'string' && sessionId.length > 0)
+          return { type: 'system', sessionId, model }
+        break
       }
+      case 'assistant': {
+        const text = event.message?.content?.[0]?.text
+        if (text)
+          return { type: 'text', text }
+        break
+      }
+      case 'tool_call': {
+        const toolCall = event.tool_call
+        const toolName = toolCall ? Object.keys(toolCall)[0] : 'tool'
+        const payload = toolCall?.[toolName]
+        const isCompleted = event.subtype === 'completed'
+        const isRejected = isCompleted && payload?.result?.rejected !== undefined
+        return {
+          type: 'tool_call',
+          toolName,
+          isCompleted,
+          isRejected,
+        }
+      }
+      case 'user':
+      case 'result':
+      case 'thinking':
+        break
+      default:
+        console.error('[cursor-cli] unhandled event type:', (event as { type: string }).type, trimmed.slice(0, 200))
     }
+    return null
   }
   catch {
     // ignore malformed lines
@@ -89,27 +86,7 @@ function parseStreamLine(line: string): StreamChunk | null {
   return null
 }
 
-function parseStdout(stdout: string): string {
-  const trimmed = stdout.trim()
-  if (!trimmed)
-    return trimmed
-  try {
-    const json = JSON.parse(trimmed) as unknown
-    if (typeof json === 'object' && json !== null && 'text' in json && typeof (json as { text: unknown }).text === 'string')
-      return (json as { text: string }).text
-    if (typeof json === 'object' && json !== null && 'result' in json && typeof (json as { result: unknown }).result === 'string')
-      return (json as { result: string }).result
-    if (typeof json === 'object' && json !== null && 'content' in json && typeof (json as { content: unknown }).content === 'string')
-      return (json as { content: string }).content
-    return trimmed
-  }
-  catch {
-    return trimmed
-  }
-}
-
 export function createCursorCliProvider(config: CursorCliProviderConfig = {}): StreamingProvider {
-  const command = config.command ?? 'agent'
   const timeoutMs = config.timeoutMs ?? 120_000
 
   return {
@@ -117,7 +94,7 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): S
       const args = buildArgs(request)
 
       return new Promise((resolve) => {
-        const child = spawn(command, args, {
+        const child = spawn(CURSOR_CLI_COMMAND, args, {
           stdio: ['ignore', 'pipe', 'pipe'],
           shell: false,
           ...(request.cwd !== undefined && request.cwd !== '' && { cwd: request.cwd }),
@@ -163,9 +140,10 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): S
         child.on('close', (code, signal) => {
           clearTimeout(timer)
           if (code === 0) {
+            const event = JSON.parse(stdout) as CursorResultEvent
             resolve({
               success: true,
-              result: parseStdout(stdout),
+              result: event.result ?? '',
             })
             return
           }
@@ -185,7 +163,7 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): S
 
     async *executeStream(request: RelayRequest): AsyncGenerator<StreamChunk, void, undefined> {
       const args = buildStreamArgs(request)
-      const child = spawn(command, args, {
+      const child = spawn(CURSOR_CLI_COMMAND, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: false,
         ...(request.cwd !== undefined && request.cwd !== '' && { cwd: request.cwd }),
