@@ -6,7 +6,7 @@ describe('createRelay', () => {
   it('runStream yields error when provider is not configured', async () => {
     const relay = createRelay({ provider: null as unknown as Provider })
     const chunks: unknown[] = []
-    for await (const c of relay.runStream({ prompt: 'x' }))
+    for await (const c of relay.runStream({ prompt: 'x', workspace: process.cwd() }))
       chunks.push(c)
 
     expect(chunks).toEqual([
@@ -20,7 +20,7 @@ describe('createRelay', () => {
     }
     const relay = createRelay({ provider })
     const chunks: unknown[] = []
-    for await (const c of relay.runStream({ prompt: 'x' }))
+    for await (const c of relay.runStream({ prompt: 'x', workspace: process.cwd() }))
       chunks.push(c)
 
     expect(chunks).toEqual([
@@ -35,7 +35,7 @@ describe('createRelay', () => {
     }
     const relay = createRelay({ provider })
     const chunks: unknown[] = []
-    for await (const c of relay.runStream({ prompt: 'hi' }))
+    for await (const c of relay.runStream({ prompt: 'hi', workspace: process.cwd() }))
       chunks.push(c)
 
     expect(chunks).toEqual([
@@ -55,7 +55,7 @@ describe('createRelay', () => {
     }
     const relay = createRelay({ provider })
     const chunks: unknown[] = []
-    for await (const c of relay.runStream({ prompt: 'x' }))
+    for await (const c of relay.runStream({ prompt: 'x', workspace: process.cwd() }))
       chunks.push(c)
 
     expect(chunks).toEqual([

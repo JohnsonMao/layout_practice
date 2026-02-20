@@ -1,6 +1,14 @@
 import { spawn } from 'node:child_process'
 import type { RelayRequest, RelayResponse, StreamChunk, StreamingProvider } from '@agent-relay/core'
-import type { CursorResultEvent, CursorStreamEvent } from './types'
+import type { CursorStreamEvent } from './types'
+
+/** Provider that extends StreamingProvider with create-chat and models. */
+export interface CursorCliProvider extends StreamingProvider {
+  /** Create a new empty chat; returns its ID (for use with --resume). */
+  createChat(workspace?: string): Promise<{ chatId: string }>
+  /** List available model IDs. */
+  listModels(): Promise<string[]>
+}
 
 export const CURSOR_CLI_NOT_FOUND = 'CURSOR_CLI_NOT_FOUND'
 export const CURSOR_CLI_TIMEOUT = 'CURSOR_CLI_TIMEOUT'
@@ -13,8 +21,10 @@ export interface CursorCliProviderConfig {
   timeoutMs?: number
 }
 
+const STREAM_COMMON_ARGS = ['--force', '--approve-mcps', '--trust']
+
 function buildArgs(request: RelayRequest): string[] {
-  const args = ['-p', request.prompt, '--output-format', 'json', '--trust']
+  const args = ['-p', request.prompt, '--output-format', 'text', '--trust', '--workspace', request.workspace]
   const opts = request.options
   if (opts?.model)
     args.push('--model', opts.model)
@@ -24,10 +34,9 @@ function buildArgs(request: RelayRequest): string[] {
 }
 
 function buildStreamArgs(request: RelayRequest): string[] {
-  const args: string[] = []
+  const args: string[] = ['-p', request.prompt, '--workspace', request.workspace, '--output-format', 'stream-json', ...STREAM_COMMON_ARGS]
   if (request.sessionId)
     args.push('--resume', request.sessionId)
-  args.push('-p', request.prompt, '--force', '--approve-mcps', '--output-format', 'stream-json', '--trust')
   const opts = request.options
   if (opts?.model)
     args.push('--model', opts.model)
@@ -86,87 +95,111 @@ function parseStreamLine(line: string): StreamChunk | null {
   return null
 }
 
-export function createCursorCliProvider(config: CursorCliProviderConfig = {}): StreamingProvider {
+interface RunCliResult {
+  stdout: string
+  stderr: string
+  code: number | null
+  /** Set when process failed to start or was killed before exit. */
+  errorCode?: 'ENOENT' | 'TIMEOUT'
+}
+
+function runCli(
+  args: string[],
+  options: { timeoutMs: number; cwd: string },
+): Promise<RunCliResult> {
+  const { timeoutMs, cwd } = options
+  return new Promise((resolve) => {
+    const child = spawn(CURSOR_CLI_COMMAND, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: false,
+      cwd,
+    })
+    let stdout = ''
+    let stderr = ''
+    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
+    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM')
+      resolve({
+        stdout,
+        stderr,
+        code: null,
+        errorCode: 'TIMEOUT',
+      })
+    }, timeoutMs)
+    child.on('error', (err: NodeJS.ErrnoException) => {
+      clearTimeout(timer)
+      if (err.code === 'ENOENT')
+        resolve({
+          stdout: '',
+          stderr: '',
+          code: null,
+          errorCode: 'ENOENT',
+        })
+      else
+        resolve({
+          stdout: '',
+          stderr: err.message ?? String(err),
+          code: null,
+        })
+    })
+    child.on('close', (code, signal) => {
+      clearTimeout(timer)
+      resolve({
+        stdout,
+        stderr: signal ? stderr || `killed (${signal})` : stderr,
+        code: code ?? null,
+      })
+    })
+  })
+}
+
+export function createCursorCliProvider(config: CursorCliProviderConfig = {}): CursorCliProvider {
   const timeoutMs = config.timeoutMs ?? 120_000
 
+  async function executeImpl(request: RelayRequest): Promise<RelayResponse> {
+    const args = buildArgs(request)
+    const { stdout, stderr, code, errorCode } = await runCli(args, {
+      timeoutMs,
+      cwd: request.workspace,
+    })
+    if (errorCode === 'ENOENT') {
+      return {
+        success: false,
+        error: {
+          code: CURSOR_CLI_NOT_FOUND,
+          message: 'Cursor CLI not found. Install it: https://cursor.com/docs/cli/overview',
+        },
+      }
+    }
+    if (errorCode === 'TIMEOUT') {
+      return {
+        success: false,
+        error: {
+          code: CURSOR_CLI_TIMEOUT,
+          message: `Cursor CLI did not complete within ${timeoutMs}ms.`,
+        },
+      }
+    }
+    if (code !== 0) {
+      const message = stderr.trim() || `Exit code ${code ?? 'unknown'}.`
+      return {
+        success: false,
+        error: { code: CURSOR_CLI_EXIT_ERROR, message },
+      }
+    }
+    return { success: true, result: stdout }
+  }
+
   return {
-    async execute(request: RelayRequest): Promise<RelayResponse> {
-      const args = buildArgs(request)
-
-      return new Promise((resolve) => {
-        const child = spawn(CURSOR_CLI_COMMAND, args, {
-          stdio: ['ignore', 'pipe', 'pipe'],
-          shell: false,
-          ...(request.cwd !== undefined && request.cwd !== '' && { cwd: request.cwd }),
-        })
-
-        let stdout = ''
-        let stderr = ''
-        child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
-        child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-
-        const timer = setTimeout(() => {
-          child.kill('SIGTERM')
-          resolve({
-            success: false,
-            error: {
-              code: CURSOR_CLI_TIMEOUT,
-              message: `Cursor CLI did not complete within ${timeoutMs}ms.`,
-            },
-          })
-        }, timeoutMs)
-
-        child.on('error', (err: NodeJS.ErrnoException) => {
-          clearTimeout(timer)
-          if (err.code === 'ENOENT') {
-            resolve({
-              success: false,
-              error: {
-                code: CURSOR_CLI_NOT_FOUND,
-                message: 'Cursor CLI not found. Install it: https://cursor.com/docs/cli/overview',
-              },
-            })
-            return
-          }
-          resolve({
-            success: false,
-            error: {
-              code: CURSOR_CLI_EXIT_ERROR,
-              message: err.message ?? String(err),
-            },
-          })
-        })
-
-        child.on('close', (code, signal) => {
-          clearTimeout(timer)
-          if (code === 0) {
-            const event = JSON.parse(stdout) as CursorResultEvent
-            resolve({
-              success: true,
-              result: event.result ?? '',
-            })
-            return
-          }
-          const message = signal
-            ? `Process killed (${signal}).`
-            : (stderr.trim() || `Exit code ${code ?? 'unknown'}.`)
-          resolve({
-            success: false,
-            error: {
-              code: CURSOR_CLI_EXIT_ERROR,
-              message,
-            },
-          })
-        })
-      })
-    },
+    execute: executeImpl,
 
     async *executeStream(request: RelayRequest): AsyncGenerator<StreamChunk, void, undefined> {
       const args = buildStreamArgs(request)
       const child = spawn(CURSOR_CLI_COMMAND, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: false,
-        ...(request.cwd !== undefined && request.cwd !== '' && { cwd: request.cwd }),
+        cwd: request.workspace,
       })
 
       const pendingChunks: StreamChunk[] = []
@@ -256,6 +289,35 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): S
         }
         await waitNext()
       }
+    },
+
+    async createChat(workspace?: string): Promise<{ chatId: string }> {
+      const args = ['create-chat', ...(workspace && workspace !== '' ? ['--workspace', workspace] : [])]
+      const cwd = (workspace && workspace !== '' ? workspace : process.cwd())
+      const { stdout, stderr, code } = await runCli(args, { timeoutMs, cwd })
+      const chatId = stdout.trim()
+      if (code !== 0 || !chatId) {
+        throw new Error(stderr.trim() || `create-chat failed (exit ${code})`)
+      }
+      return { chatId }
+    },
+
+    async listModels(): Promise<string[]> {
+      const args = ['models']
+      const { stdout, stderr, code } = await runCli(args, { timeoutMs, cwd: process.cwd() })
+      if (code !== 0) {
+        throw new Error(stderr.trim() || `models failed (exit ${code})`)
+      }
+      const lines = stdout.split('\n').map(l => l.trim()).filter(Boolean)
+      const modelIds: string[] = []
+      for (const line of lines) {
+        if (line === 'Available models')
+          continue
+        const id = line.includes(' - ') ? line.slice(0, line.indexOf(' - ')).trim() : line
+        if (id)
+          modelIds.push(id)
+      }
+      return modelIds
     },
   }
 }

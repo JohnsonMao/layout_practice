@@ -48,12 +48,12 @@ function main(): void {
     options: {
       thread: ThreadChannel
       statusMsgRef: { current: Message }
-      cwd?: string
+      workspace: string
       sessionId?: string
       onSession?: (sessionId: string) => void
     },
   ): Promise<{ success: boolean; error?: string }> {
-    const { thread, statusMsgRef, cwd, sessionId, onSession } = options
+    const { thread, statusMsgRef, workspace, sessionId, onSession } = options
     let errorMsg: string | undefined
 
     const editThenNewThinking = async (content: string) => {
@@ -63,7 +63,7 @@ function main(): void {
 
     const request = {
       prompt,
-      ...(cwd !== undefined && cwd !== '' && { cwd }),
+      workspace,
       ...(sessionId !== undefined && sessionId !== '' && { sessionId }),
     }
     for await (const chunk of relay.runStream(request)) {
@@ -119,7 +119,7 @@ function main(): void {
     }
     rateLimiter.record(userId)
 
-    const cwd = (workspaceId && getWorkspacePath(workspaceId)) ?? process.cwd()
+    const workspace = (workspaceId && getWorkspacePath(workspaceId)) ?? process.cwd()
     const name = prompt.slice(0, 100).replace(/\n/g, ' ') || 'prompt'
     const thread = await channel.threads.create({
       name,
@@ -135,8 +135,8 @@ function main(): void {
       const { success, error } = await runStreamWithThrottle(prompt, {
         thread,
         statusMsgRef,
-        cwd,
-        onSession: sessionId => void setSession(thread.id, sessionId, cwd),
+        workspace,
+        onSession: sessionId => void setSession(thread.id, sessionId, workspace),
       })
 
       if (!success)
@@ -152,7 +152,7 @@ function main(): void {
     thread: ThreadChannel,
     content: string,
     userId: string,
-    session: { sessionId: string; cwd: string },
+    session: { sessionId: string; workspace: string },
   ): Promise<void> {
     if (!rateLimiter.check(userId)) {
       await thread.send('⏱️ 請求過於頻繁，請稍後再試（每分鐘最多 5 次）。').catch(() => {})
@@ -167,7 +167,7 @@ function main(): void {
       const { success, error } = await runStreamWithThrottle(content, {
         thread,
         statusMsgRef,
-        cwd: session.cwd,
+        workspace: session.workspace,
         sessionId: session.sessionId,
       })
 

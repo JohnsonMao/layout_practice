@@ -23,7 +23,7 @@ describe('createCursorCliProvider', () => {
     })
 
     const provider = createCursorCliProvider({ timeoutMs: 5000 })
-    const result = await provider.execute({ prompt: 'hello' })
+    const result = await provider.execute({ prompt: 'hello', workspace: '/test-cwd' })
 
     expect(result).toHaveProperty('success')
     expect(typeof result.success).toBe('boolean')
@@ -33,19 +33,40 @@ describe('createCursorCliProvider', () => {
       expect(result.error).toHaveProperty('code', 'message')
   })
 
-  it('invokes CLI with -p and --output-format json', async () => {
+  it('invokes CLI with -p, --output-format text, and --workspace (cwd)', async () => {
     mockSpawn.mockImplementation(() => ({
-      stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{"text":"ok"}')) }) },
+      stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('ok')) }) },
       stderr: { on: vi.fn() },
       on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
       kill: vi.fn(),
     }))
 
     const provider = createCursorCliProvider()
-    await provider.execute({ prompt: 'test prompt' })
+    await provider.execute({ prompt: 'test prompt', workspace: '/test-cwd' })
 
-    expect(mockSpawn).toHaveBeenCalledWith('agent', ['-p', 'test prompt', '--output-format', 'json', '--trust'], expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false }))
+    expect(mockSpawn).toHaveBeenCalledWith(
+      'agent',
+      ['-p', 'test prompt', '--output-format', 'text', '--trust', '--workspace', '/test-cwd'],
+      expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false, cwd: '/test-cwd' }),
+    )
   })
+
+  it('passes --workspace and spawn cwd from request.workspace', async () => {
+    mockSpawn.mockImplementation((_cmd: string, args: string[], opts?: { cwd?: string }) => {
+      expect(args).toContain('--workspace')
+      expect(args).toContain('/path/to/workspace')
+      expect(opts?.cwd).toBe('/path/to/workspace')
+      return {
+        stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{}')) }) },
+        stderr: { on: vi.fn() },
+        on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+        kill: vi.fn(),
+      }
+    })
+    const provider = createCursorCliProvider()
+    await provider.execute({ prompt: 'x', workspace: '/path/to/workspace' })
+  })
+
 
   it('passes optional model and mode to CLI', async () => {
     mockSpawn.mockImplementation(() => ({
@@ -58,32 +79,33 @@ describe('createCursorCliProvider', () => {
     const provider = createCursorCliProvider()
     await provider.execute({
       prompt: 'x',
+      workspace: '/cwd',
       options: { model: 'gpt-5.2', mode: 'plan' },
     })
 
     expect(mockSpawn).toHaveBeenCalledWith('agent', [
-      '-p', 'x', '--output-format', 'json', '--trust',
+      '-p', 'x', '--output-format', 'text', '--trust', '--workspace', '/cwd',
       '--model', 'gpt-5.2', '--mode', 'plan',
     ], expect.any(Object))
   })
 
-  it('returns success with parsed JSON text as result', async () => {
+  it('returns success with stdout text as result', async () => {
     mockSpawn.mockImplementation(() => ({
-      stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{"text":"parsed result"}')) }) },
+      stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('plain result')) }) },
       stderr: { on: vi.fn() },
       on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
       kill: vi.fn(),
     }))
 
     const provider = createCursorCliProvider()
-    const result = await provider.execute({ prompt: 'q' })
+    const result = await provider.execute({ prompt: 'q', workspace: '/cwd' })
 
     expect(result.success).toBe(true)
     if (result.success)
-      expect(result.result).toBe('parsed result')
+      expect(result.result).toBe('plain result')
   })
 
-  it('fallback to raw stdout when JSON invalid', async () => {
+  it('returns raw stdout when output is plain text', async () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('plain text output')) }) },
       stderr: { on: vi.fn() },
@@ -92,7 +114,7 @@ describe('createCursorCliProvider', () => {
     }))
 
     const provider = createCursorCliProvider()
-    const result = await provider.execute({ prompt: 'q' })
+    const result = await provider.execute({ prompt: 'q', workspace: '/cwd' })
 
     expect(result.success).toBe(true)
     if (result.success)
@@ -108,7 +130,7 @@ describe('createCursorCliProvider', () => {
     }))
 
     const provider = createCursorCliProvider()
-    const result = await provider.execute({ prompt: 'q' })
+    const result = await provider.execute({ prompt: 'q', workspace: '/cwd' })
 
     expect(result.success).toBe(false)
     if (!result.success) {
@@ -132,7 +154,7 @@ describe('createCursorCliProvider', () => {
     }))
 
     const provider = createCursorCliProvider()
-    const result = await provider.execute({ prompt: 'q' })
+    const result = await provider.execute({ prompt: 'q', workspace: '/cwd' })
 
     expect(result.success).toBe(false)
     if (!result.success)
@@ -165,6 +187,7 @@ describe('createCursorCliProvider', () => {
     const chunks: unknown[] = []
     for await (const c of provider.executeStream({
       prompt: 'follow-up',
+      workspace: '/cwd',
       sessionId: 'existing-sid',
     }))
       chunks.push(c)
@@ -198,7 +221,7 @@ describe('createCursorCliProvider', () => {
 
     const provider = createCursorCliProvider()
     const chunks: unknown[] = []
-    for await (const c of provider.executeStream({ prompt: 'hi' }))
+    for await (const c of provider.executeStream({ prompt: 'hi', workspace: '/cwd' }))
       chunks.push(c)
 
     const systemChunk = chunks.find(c => typeof c === 'object' && c !== null && (c as { type?: string }).type === 'system')

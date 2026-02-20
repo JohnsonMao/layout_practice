@@ -27,7 +27,7 @@ async function ensureDb(): Promise<Database> {
     CREATE TABLE IF NOT EXISTS thread_sessions (
       thread_id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
-      cwd TEXT,
+      workspace TEXT,
       created_at INTEGER DEFAULT (unixepoch())
     )
   `)
@@ -42,24 +42,24 @@ function persistDb(): void {
   writeFileSync(path, Buffer.from(data))
 }
 
-export type ThreadSession = { sessionId: string; cwd: string }
+export type ThreadSession = { sessionId: string; workspace: string }
 
 export async function getSession(threadId: string): Promise<ThreadSession | null> {
   const database = await ensureDb()
-  const stmt = database.prepare('SELECT session_id AS sessionId, cwd FROM thread_sessions WHERE thread_id = ?')
+  const stmt = database.prepare('SELECT session_id AS sessionId, workspace FROM thread_sessions WHERE thread_id = ?')
   stmt.bind([threadId])
-  const row = stmt.step() ? (stmt.getAsObject() as { sessionId: string; cwd: string | null }) : null
+  const row = stmt.step() ? (stmt.getAsObject() as { sessionId: string; workspace: string | null }) : null
   stmt.free()
   if (!row)
     return null
-  return { sessionId: row.sessionId, cwd: row.cwd ?? process.cwd() }
+  return { sessionId: row.sessionId, workspace: row.workspace ?? process.cwd() }
 }
 
-export async function setSession(threadId: string, sessionId: string, cwd?: string): Promise<void> {
+export async function setSession(threadId: string, sessionId: string, workspace?: string): Promise<void> {
   const database = await ensureDb()
   database.run(
-    'INSERT OR REPLACE INTO thread_sessions (thread_id, session_id, cwd, created_at) VALUES (?, ?, ?, unixepoch())',
-    [threadId, sessionId, cwd ?? null],
+    'INSERT OR REPLACE INTO thread_sessions (thread_id, session_id, workspace, created_at) VALUES (?, ?, ?, unixepoch())',
+    [threadId, sessionId, workspace ?? null],
   )
   persistDb()
 }

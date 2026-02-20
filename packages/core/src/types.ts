@@ -7,8 +7,8 @@ export interface RelayRequestOptions {
 /** Canonical request type used by platforms to submit AI tasks. */
 export interface RelayRequest {
   prompt: string
-  /** Working directory for the agent (e.g. project root). Omit to use process cwd. */
-  cwd?: string
+  /** Workspace path for the agent; passed as --workspace to CLI and used as spawn cwd. Required. */
+  workspace: string
   /** Cursor session id for resume (e.g. from Cursor CLI stream). When set, provider may use --resume. */
   sessionId?: string
   options?: RelayRequestOptions

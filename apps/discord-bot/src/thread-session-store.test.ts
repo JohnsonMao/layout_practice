@@ -32,15 +32,15 @@ describe('thread-session-store', () => {
     const s = await getSession('thread-1')
     expect(s).not.toBeNull()
     expect(s!.sessionId).toBe('sid-abc')
-    expect(s!.cwd).toBe('/path/to/project')
+    expect(s!.workspace).toBe('/path/to/project')
   })
 
-  it('getSession returns process.cwd() when cwd was not set', async () => {
+  it('getSession returns process.cwd() when workspace was not set', async () => {
     await setSession('thread-2', 'sid-xyz')
     const s = await getSession('thread-2')
     expect(s).not.toBeNull()
     expect(s!.sessionId).toBe('sid-xyz')
-    expect(s!.cwd).toBe(process.cwd())
+    expect(s!.workspace).toBe(process.cwd())
   })
 
   it('setSession overwrites existing row (INSERT OR REPLACE)', async () => {
@@ -48,7 +48,7 @@ describe('thread-session-store', () => {
     await setSession('thread-1', 'sid-new', '/new')
     const s = await getSession('thread-1')
     expect(s!.sessionId).toBe('sid-new')
-    expect(s!.cwd).toBe('/new')
+    expect(s!.workspace).toBe('/new')
   })
 
   it('deleteSession removes the row', async () => {
