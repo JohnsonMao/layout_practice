@@ -1,3 +1,3 @@
-import { data as promptData } from './prompt'
+import { data as createChatData } from './create-chat'
 
-export const commands = [promptData]
+export const commands = [createChatData]

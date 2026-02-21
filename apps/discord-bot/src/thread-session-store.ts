@@ -28,6 +28,7 @@ async function ensureDb(): Promise<Database> {
       thread_id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       workspace TEXT,
+      model TEXT,
       created_at INTEGER DEFAULT (unixepoch())
     )
   `)
@@ -42,24 +43,28 @@ function persistDb(): void {
   writeFileSync(path, Buffer.from(data))
 }
 
-export type ThreadSession = { sessionId: string; workspace: string }
+export type ThreadSession = { sessionId: string; workspace: string; model?: string }
 
 export async function getSession(threadId: string): Promise<ThreadSession | null> {
   const database = await ensureDb()
-  const stmt = database.prepare('SELECT session_id AS sessionId, workspace FROM thread_sessions WHERE thread_id = ?')
+  const stmt = database.prepare('SELECT session_id AS sessionId, workspace, model FROM thread_sessions WHERE thread_id = ?')
   stmt.bind([threadId])
-  const row = stmt.step() ? (stmt.getAsObject() as { sessionId: string; workspace: string | null }) : null
+  const row = stmt.step() ? (stmt.getAsObject() as { sessionId: string; workspace: string | null; model: string | null }) : null
   stmt.free()
   if (!row)
     return null
-  return { sessionId: row.sessionId, workspace: row.workspace ?? process.cwd() }
+  return {
+    sessionId: row.sessionId,
+    workspace: row.workspace ?? process.cwd(),
+    ...(row.model != null && row.model !== '' && { model: row.model }),
+  }
 }
 
-export async function setSession(threadId: string, sessionId: string, workspace?: string): Promise<void> {
+export async function setSession(threadId: string, sessionId: string, workspace?: string, model?: string): Promise<void> {
   const database = await ensureDb()
   database.run(
-    'INSERT OR REPLACE INTO thread_sessions (thread_id, session_id, workspace, created_at) VALUES (?, ?, ?, unixepoch())',
-    [threadId, sessionId, workspace ?? null],
+    'INSERT OR REPLACE INTO thread_sessions (thread_id, session_id, workspace, model, created_at) VALUES (?, ?, ?, ?, unixepoch())',
+    [threadId, sessionId, workspace ?? null, model ?? null],
   )
   persistDb()
 }

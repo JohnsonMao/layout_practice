@@ -8,7 +8,7 @@ import {
   type ThreadChannel,
 } from 'discord.js'
 import { createRelay } from '@agent-relay/core'
-import { createCursorCliProvider } from '@agent-relay/provider-cursor-cli'
+import { createCursorCliProvider, type CursorCliProvider } from '@agent-relay/provider-cursor-cli'
 import { getConfig, truncateForDiscord } from './config'
 import { createRateLimiter } from './rate-limit'
 import { getSession, setSession, deleteSession } from './thread-session-store'
@@ -50,10 +50,11 @@ function main(): void {
       statusMsgRef: { current: Message }
       workspace: string
       sessionId?: string
+      model?: string
       onSession?: (sessionId: string) => void
     },
   ): Promise<{ success: boolean; error?: string }> {
-    const { thread, statusMsgRef, workspace, sessionId, onSession } = options
+    const { thread, statusMsgRef, workspace, sessionId, model, onSession } = options
     let errorMsg: string | undefined
 
     const editThenNewThinking = async (content: string) => {
@@ -65,6 +66,7 @@ function main(): void {
       prompt,
       workspace,
       ...(sessionId !== undefined && sessionId !== '' && { sessionId }),
+      ...(model !== undefined && model !== '' && { options: { model } }),
     }
     for await (const chunk of relay.runStream(request)) {
       switch (chunk.type) {
@@ -105,9 +107,9 @@ function main(): void {
     return { success: !errorMsg, error: errorMsg }
   }
 
-  /** Handle /prompt: create thread, stream in thread, register for follow-up. */
-  async function handlePrompt(
-    prompt: string,
+  /** Handle /create-chat: create thread, create session, show workspace; no initial prompt. */
+  async function handleCreateChat(
+    title: string,
     userId: string,
     channel: TextChannel,
     deferEditReply: (content: string) => Promise<unknown>,
@@ -120,30 +122,23 @@ function main(): void {
     rateLimiter.record(userId)
 
     const workspace = (workspaceId && getWorkspacePath(workspaceId)) ?? process.cwd()
-    const name = prompt.slice(0, 100).replace(/\n/g, ' ') || 'prompt'
+    const threadName = title.slice(0, 100).replace(/\n/g, ' ').trim() || 'chat'
     const thread = await channel.threads.create({
-      name,
+      name: threadName,
       type: ChannelType.PublicThread,
-      reason: 'Prompt thread',
+      reason: 'Create chat',
     })
     await deferEditReply(`已建立討論串：<#${thread.id}>`)
 
-    processingThreadIds.add(thread.id)
-    const statusMsgRef = { current: await thread.send(THINKING_LABEL) }
-
     try {
-      const { success, error } = await runStreamWithThrottle(prompt, {
-        thread,
-        statusMsgRef,
-        workspace,
-        onSession: sessionId => void setSession(thread.id, sessionId, workspace),
-      })
-
-      if (!success)
-        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}`).catch(() => {})
+      const cursorProvider = provider as CursorCliProvider
+      const { chatId } = await cursorProvider.createChat(workspace)
+      await setSession(thread.id, chatId, workspace)
+      await thread.send(`已就緒，可在此討論串直接發送訊息與 AI 對話。\n**Workspace:** ${workspace}`).catch(() => {})
     }
-    finally {
-      processingThreadIds.delete(thread.id)
+    catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      await thread.send(`❌ 無法建立聊天：${truncateForDiscord(msg)}\n請稍後再試或另建討論串。`).catch(() => {})
     }
   }
 
@@ -152,7 +147,7 @@ function main(): void {
     thread: ThreadChannel,
     content: string,
     userId: string,
-    session: { sessionId: string; workspace: string },
+    session: { sessionId: string; workspace: string; model?: string },
   ): Promise<void> {
     if (!rateLimiter.check(userId)) {
       await thread.send('⏱️ 請求過於頻繁，請稍後再試（每分鐘最多 5 次）。').catch(() => {})
@@ -169,11 +164,12 @@ function main(): void {
         statusMsgRef,
         workspace: session.workspace,
         sessionId: session.sessionId,
+        model: session.model,
       })
 
       if (!success) {
         await deleteSession(thread.id)
-        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}\n如需繼續對話，請在此討論串使用 \`/prompt\` 重新開始。`).catch(() => {})
+        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}\n如需繼續對話，請使用 \`/create-chat\` 重新建立討論串。`).catch(() => {})
       }
     }
     finally {
@@ -188,8 +184,8 @@ function main(): void {
 
   client.on(Events.InteractionCreate, async interaction => {
     if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === 'prompt') {
-        const prompt = interaction.options.getString('prompt', true)
+      if (interaction.commandName === 'create-chat') {
+        const title = interaction.options.getString('title', true)
         const workspaceId = interaction.options.getString('workspace') ?? null
         const channel = interaction.channel
         if (!channel || !channel.isTextBased() || channel.isDMBased()) {
@@ -202,7 +198,7 @@ function main(): void {
           return
         }
         await interaction.deferReply()
-        await handlePrompt(prompt, interaction.user.id, textChannel, async content => {
+        await handleCreateChat(title, interaction.user.id, textChannel, async content => {
           await interaction.editReply(content)
         }, workspaceId)
         return
