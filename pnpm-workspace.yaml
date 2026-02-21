@@ -1,6 +1,7 @@
 packages:
   - "apps/*"
   - "packages/core"
+  - "packages/relay-context"
   - "packages/provider/*"
 
 catalogs:

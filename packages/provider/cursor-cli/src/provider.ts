@@ -16,6 +16,13 @@ export const CURSOR_CLI_EXIT_ERROR = 'CURSOR_CLI_EXIT_ERROR'
 
 const CURSOR_CLI_COMMAND = 'agent'
 
+const DEFAULT_CURSOR_MODEL = 'Auto'
+
+/** Default model for CLI (request.options.model overrides). Override with CURSOR_MODEL env. */
+function getDefaultCursorModel(): string {
+  return process.env.CURSOR_MODEL ?? DEFAULT_CURSOR_MODEL
+}
+
 export interface CursorCliProviderConfig {
   /** Timeout in ms (default: 120_000) */
   timeoutMs?: number
@@ -23,23 +30,43 @@ export interface CursorCliProviderConfig {
 
 const STREAM_COMMON_ARGS = ['--force', '--approve-mcps', '--trust']
 
+function getEffectiveModel(opts: RelayRequest['options']): string {
+  return opts?.model ?? getDefaultCursorModel()
+}
+
 function buildArgs(request: RelayRequest): string[] {
-  const args = ['-p', request.prompt, '--output-format', 'text', '--trust', '--workspace', request.workspace]
+  const args = [
+    '-p',
+    request.prompt,
+    '--output-format',
+    'text',
+    '--trust',
+    '--model',
+    getEffectiveModel(request.options),
+    '--workspace',
+    request.workspace,
+  ]
   const opts = request.options
-  if (opts?.model)
-    args.push('--model', opts.model)
   if (opts?.mode)
     args.push('--mode', opts.mode)
   return args
 }
 
 function buildStreamArgs(request: RelayRequest): string[] {
-  const args: string[] = ['-p', request.prompt, '--workspace', request.workspace, '--output-format', 'stream-json', ...STREAM_COMMON_ARGS]
+  const args: string[] = [
+    '-p',
+    request.prompt,
+    '--model',
+    getEffectiveModel(request.options),
+    '--workspace',
+    request.workspace,
+    '--output-format',
+    'stream-json',
+    ...STREAM_COMMON_ARGS,
+  ]
   if (request.sessionId)
     args.push('--resume', request.sessionId)
   const opts = request.options
-  if (opts?.model)
-    args.push('--model', opts.model)
   if (opts?.mode)
     args.push('--mode', opts.mode)
   return args

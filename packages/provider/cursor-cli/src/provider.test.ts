@@ -46,7 +46,7 @@ describe('createCursorCliProvider', () => {
 
     expect(mockSpawn).toHaveBeenCalledWith(
       'agent',
-      ['-p', 'test prompt', '--output-format', 'text', '--trust', '--workspace', '/test-cwd'],
+      ['-p', 'test prompt', '--output-format', 'text', '--trust', '--workspace', '/test-cwd', '--model', 'Auto'],
       expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false, cwd: '/test-cwd' }),
     )
   })

@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@agent-relay/core": "workspace:*",
-    "@agent-relay/provider-cursor-cli": "workspace:*",
+    "@agent-relay/relay-context": "workspace:*",
     "discord.js": "catalog:prod",
     "dotenv": "catalog:prod",
     "sql.js": "catalog:prod"

@@ -7,25 +7,23 @@ import {
   type TextChannel,
   type ThreadChannel,
 } from 'discord.js'
-import { createRelay } from '@agent-relay/core'
-import { createCursorCliProvider, type CursorCliProvider } from '@agent-relay/provider-cursor-cli'
+import type { StreamChunk } from '@agent-relay/core'
 import { getConfig, truncateForDiscord } from './config'
 import { createRateLimiter } from './rate-limit'
+import { createRelayContext } from '@agent-relay/relay-context'
 import { getSession, setSession, deleteSession } from './thread-session-store'
 import { getWorkspacePath } from './workspace-config'
 
 const RATE_LIMIT_PER_MIN = 5
-const THINKING_LABEL = '💭 思考中...'
+const THINKING_LABEL = '💭 Thinking...'
 
 /** Thread IDs currently processing (no follow-up until done). */
 const processingThreadIds = new Set<string>()
 
-function main(): void {
+async function main(): Promise<void> {
   const { token } = getConfig()
   const rateLimiter = createRateLimiter({ windowMs: 60_000, maxPerWindow: RATE_LIMIT_PER_MIN })
-
-  const provider = createCursorCliProvider()
-  const relay = createRelay({ provider })
+  const ctx = createRelayContext()
 
   const client = new Client({
     intents: [
@@ -44,17 +42,14 @@ function main(): void {
    * Stream flow: per chunk type edit current status message, optionally send new THINKING_LABEL; on done/error remove status message.
    */
   async function runStreamWithThrottle(
-    prompt: string,
+    stream: AsyncGenerator<StreamChunk, void, undefined>,
     options: {
       thread: ThreadChannel
       statusMsgRef: { current: Message }
-      workspace: string
-      sessionId?: string
-      model?: string
       onSession?: (sessionId: string) => void
     },
   ): Promise<{ success: boolean; error?: string }> {
-    const { thread, statusMsgRef, workspace, sessionId, model, onSession } = options
+    const { thread, statusMsgRef, onSession } = options
     let errorMsg: string | undefined
 
     const editThenNewThinking = async (content: string) => {
@@ -62,17 +57,11 @@ function main(): void {
       statusMsgRef.current = await thread.send(THINKING_LABEL)
     }
 
-    const request = {
-      prompt,
-      workspace,
-      ...(sessionId !== undefined && sessionId !== '' && { sessionId }),
-      ...(model !== undefined && model !== '' && { options: { model } }),
-    }
-    for await (const chunk of relay.runStream(request)) {
+    for await (const chunk of stream) {
       switch (chunk.type) {
         case 'system': {
           onSession?.(chunk.sessionId)
-          const modelLabel = chunk.model ? `使用 model: ${chunk.model}` : '連線中…'
+          const modelLabel = chunk.model ? `model: ${chunk.model}` : 'Connecting…'
           await statusMsgRef.current.edit(truncateForDiscord(modelLabel)).catch(() => {})
           statusMsgRef.current = await thread.send(THINKING_LABEL)
           break
@@ -116,7 +105,7 @@ function main(): void {
     workspaceId?: string | null,
   ): Promise<void> {
     if (!rateLimiter.check(userId)) {
-      await deferEditReply('⏱️ 請求過於頻繁，請稍後再試（每分鐘最多 5 次）。')
+      await deferEditReply('⏱️ Rate limit exceeded. Please try again later (max 5 per minute).')
       return
     }
     rateLimiter.record(userId)
@@ -128,17 +117,19 @@ function main(): void {
       type: ChannelType.PublicThread,
       reason: 'Create chat',
     })
-    await deferEditReply(`已建立討論串：<#${thread.id}>`)
+    await deferEditReply(`Thread created: <#${thread.id}>`)
 
     try {
-      const cursorProvider = provider as CursorCliProvider
-      const { chatId } = await cursorProvider.createChat(workspace)
-      await setSession(thread.id, chatId, workspace)
-      await thread.send(`已就緒，可在此討論串直接發送訊息與 AI 對話。\n**Workspace:** ${workspace}`).catch(() => {})
+      const { chatId } = await ctx.activeCreateChatProvider.createChat(workspace)
+      await setSession(thread.id, chatId, workspace, undefined, ctx.activeProviderKind)
+      const label = ctx.activeProviderDisplayName
+        ? `Ready. Send messages here to chat with AI (using ${ctx.activeProviderDisplayName}).`
+        : 'Ready. Send messages here to chat with AI.'
+      await thread.send(`${label}\n**Workspace:** ${workspace}`).catch(() => {})
     }
     catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      await thread.send(`❌ 無法建立聊天：${truncateForDiscord(msg)}\n請稍後再試或另建討論串。`).catch(() => {})
+      const msg = ctx.formatCreateChatError(err)
+      await thread.send(`❌ Failed to create chat: ${truncateForDiscord(msg)}\nTry again later or create a new thread.`).catch(() => {})
     }
   }
 
@@ -147,10 +138,10 @@ function main(): void {
     thread: ThreadChannel,
     content: string,
     userId: string,
-    session: { sessionId: string; workspace: string; model?: string },
+    session: { sessionId: string; workspace: string; model?: string; provider?: 'cursor-cli' | 'copilot-sdk' },
   ): Promise<void> {
     if (!rateLimiter.check(userId)) {
-      await thread.send('⏱️ 請求過於頻繁，請稍後再試（每分鐘最多 5 次）。').catch(() => {})
+      await thread.send('⏱️ Rate limit exceeded. Please try again later (max 5 per minute).').catch(() => {})
       return
     }
     rateLimiter.record(userId)
@@ -158,18 +149,28 @@ function main(): void {
     processingThreadIds.add(thread.id)
     const statusMsgRef = { current: await thread.send(THINKING_LABEL) }
 
+    const relay = ctx.getRelayForSession(session)
+    if (!relay) {
+      await thread.send(`❌ ${ctx.getRunStreamUnavailableMessage(session)}`).catch(() => {})
+      processingThreadIds.delete(thread.id)
+      return
+    }
+    const stream = relay.runStream({
+      prompt: content,
+      workspace: session.workspace,
+      sessionId: session.sessionId,
+      ...(session.model && { options: { model: session.model } }),
+    })
+
     try {
-      const { success, error } = await runStreamWithThrottle(content, {
+      const { success, error } = await runStreamWithThrottle(stream, {
         thread,
         statusMsgRef,
-        workspace: session.workspace,
-        sessionId: session.sessionId,
-        model: session.model,
       })
 
       if (!success) {
         await deleteSession(thread.id)
-        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}\n如需繼續對話，請使用 \`/create-chat\` 重新建立討論串。`).catch(() => {})
+        await thread.send(`❌ ${truncateForDiscord(error ?? 'Unknown error')}\nUse \`/create-chat\` to start a new thread.`).catch(() => {})
       }
     }
     finally {
@@ -189,12 +190,12 @@ function main(): void {
         const workspaceId = interaction.options.getString('workspace') ?? null
         const channel = interaction.channel
         if (!channel || !channel.isTextBased() || channel.isDMBased()) {
-          await interaction.reply({ content: '此指令僅能在伺服器文字頻道使用。', ephemeral: true })
+          await interaction.reply({ content: 'This command can only be used in a server text channel.', ephemeral: true })
           return
         }
         const textChannel = channel as TextChannel
         if (!textChannel.threads) {
-          await interaction.reply({ content: '此頻道無法建立討論串。', ephemeral: true })
+          await interaction.reply({ content: 'This channel does not support creating threads.', ephemeral: true })
           return
         }
         await interaction.deferReply()
@@ -230,10 +231,13 @@ function main(): void {
 
   client.login(token).catch((err: unknown) => {
     const msg = err instanceof Error ? err.message : String(err)
-    console.error('無法連線到 Discord。若為 Connect Timeout，請檢查網路、防火牆或 VPN 是否阻擋對 Discord 的連線。')
+    console.error('Failed to connect to Discord. If you see Connect Timeout, check network, firewall, or VPN blocking Discord.')
     console.error(msg)
     process.exit(1)
   })
 }
 
-main()
+main().catch((err: unknown) => {
+  console.error(err)
+  process.exit(1)
+})
