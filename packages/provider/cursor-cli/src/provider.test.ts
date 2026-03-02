@@ -46,7 +46,7 @@ describe('createCursorCliProvider', () => {
 
     expect(mockSpawn).toHaveBeenCalledWith(
       'agent',
-      ['-p', 'test prompt', '--output-format', 'text', '--trust', '--workspace', '/test-cwd', '--model', 'Auto'],
+      ['-p', 'test prompt', '--output-format', 'text', '--trust', '--model', 'Auto', '--workspace', '/test-cwd'],
       expect.objectContaining({ stdio: ['ignore', 'pipe', 'pipe'], shell: false, cwd: '/test-cwd' }),
     )
   })
@@ -84,8 +84,7 @@ describe('createCursorCliProvider', () => {
     })
 
     expect(mockSpawn).toHaveBeenCalledWith('agent', [
-      '-p', 'x', '--output-format', 'text', '--trust', '--workspace', '/cwd',
-      '--model', 'gpt-5.2', '--mode', 'plan',
+      '-p', 'x', '--output-format', 'text', '--trust', '--model', 'gpt-5.2', '--workspace', '/cwd', '--mode', 'plan',
     ], expect.any(Object))
   })
 
