@@ -1,0 +1,27 @@
+{
+  "name": "github-bot",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsup",
+    "dev": "node --import tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@agent-relay/core": "workspace:*",
+    "@agent-relay/relay-context": "workspace:*",
+    "@octokit/rest": "catalog:prod",
+    "@octokit/webhooks": "catalog:prod",
+    "dotenv": "catalog:prod"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:dev",
+    "tsup": "catalog:dev",
+    "tsx": "catalog:dev",
+    "typescript": "catalog:dev",
+    "vitest": "catalog:dev"
+  }
+}
