@@ -20,3 +20,5 @@ logs
 node_modules
 temp
 apps/discord-bot/data/
+.spectra/
+openspec/.vector-search.db*
