@@ -1,7 +1,7 @@
 packages:
-  - "apps/*"
+  - "apps/relay-service"
   - "packages/core"
-  - "packages/relay-context"
+  - "packages/platform/*"
   - "packages/provider/*"
 
 catalogs:

@@ -58,57 +58,26 @@ importers:
         specifier: catalog:dev
         version: 5.9.3
 
-  apps/discord-bot:
+  apps/relay-service:
     dependencies:
       '@agent-relay/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@agent-relay/relay-context':
+      '@agent-relay/platform-discord':
         specifier: workspace:*
-        version: link:../../packages/relay-context
-      discord.js:
-        specifier: catalog:prod
-        version: 14.25.1
-      dotenv:
-        specifier: catalog:prod
-        version: 17.3.1
-      sql.js:
-        specifier: catalog:prod
-        version: 1.14.0
-    devDependencies:
-      '@types/node':
-        specifier: catalog:dev
-        version: 22.19.11
-      '@types/sql.js':
-        specifier: catalog:dev
-        version: 1.4.9
-      tsup:
-        specifier: catalog:dev
-        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
-      tsx:
-        specifier: catalog:dev
-        version: 4.21.0
-      typescript:
-        specifier: catalog:dev
-        version: 5.9.3
-      vitest:
-        specifier: catalog:dev
-        version: 2.1.9(@types/node@22.19.11)
-
-  apps/github-bot:
-    dependencies:
-      '@agent-relay/core':
+        version: link:../../packages/platform/discord
+      '@agent-relay/platform-github':
         specifier: workspace:*
-        version: link:../../packages/core
-      '@agent-relay/relay-context':
+        version: link:../../packages/platform/github
+      '@agent-relay/provider-copilot-sdk':
         specifier: workspace:*
-        version: link:../../packages/relay-context
-      '@octokit/rest':
-        specifier: catalog:prod
-        version: 21.1.1
-      '@octokit/webhooks':
-        specifier: catalog:prod
-        version: 14.2.0
+        version: link:../../packages/provider/copilot-sdk
+      '@agent-relay/provider-cursor-cli':
+        specifier: workspace:*
+        version: link:../../packages/provider/cursor-cli
+      '@agent-relay/provider-gemini':
+        specifier: workspace:*
+        version: link:../../packages/provider/gemini
       dotenv:
         specifier: catalog:prod
         version: 17.3.1
@@ -131,6 +100,65 @@ importers:
 
   packages/core:
     dependencies:
+      dotenv:
+        specifier: catalog:prod
+        version: 17.3.1
+    devDependencies:
+      '@types/node':
+        specifier: catalog:dev
+        version: 22.19.11
+      tsup:
+        specifier: catalog:dev
+        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: catalog:dev
+        version: 5.9.3
+      vitest:
+        specifier: catalog:dev
+        version: 2.1.9(@types/node@22.19.11)
+
+  packages/platform/discord:
+    dependencies:
+      '@agent-relay/core':
+        specifier: workspace:*
+        version: link:../../core
+      discord.js:
+        specifier: catalog:prod
+        version: 14.25.1
+      dotenv:
+        specifier: catalog:prod
+        version: 17.3.1
+      sql.js:
+        specifier: catalog:prod
+        version: 1.14.0
+    devDependencies:
+      '@types/node':
+        specifier: catalog:dev
+        version: 22.19.11
+      '@types/sql.js':
+        specifier: catalog:dev
+        version: 1.4.9
+      tsup:
+        specifier: catalog:dev
+        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: catalog:dev
+        version: 5.9.3
+      vitest:
+        specifier: catalog:dev
+        version: 2.1.9(@types/node@22.19.11)
+
+  packages/platform/github:
+    dependencies:
+      '@agent-relay/core':
+        specifier: workspace:*
+        version: link:../../core
+      '@octokit/rest':
+        specifier: catalog:prod
+        version: 21.1.1
+      '@octokit/webhooks':
+        specifier: catalog:prod
+        version: 14.2.0
       dotenv:
         specifier: catalog:prod
         version: 17.3.1
@@ -197,31 +225,6 @@ importers:
       '@google/genai':
         specifier: catalog:prod
         version: 1.43.0
-    devDependencies:
-      '@types/node':
-        specifier: catalog:dev
-        version: 22.19.11
-      tsup:
-        specifier: catalog:dev
-        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
-      typescript:
-        specifier: catalog:dev
-        version: 5.9.3
-      vitest:
-        specifier: catalog:dev
-        version: 2.1.9(@types/node@22.19.11)
-
-  packages/relay-context:
-    dependencies:
-      '@agent-relay/core':
-        specifier: workspace:*
-        version: link:../core
-      '@agent-relay/provider-copilot-sdk':
-        specifier: workspace:*
-        version: link:../provider/copilot-sdk
-      '@agent-relay/provider-cursor-cli':
-        specifier: workspace:*
-        version: link:../provider/cursor-cli
     devDependencies:
       '@types/node':
         specifier: catalog:dev

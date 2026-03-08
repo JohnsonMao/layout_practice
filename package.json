@@ -5,8 +5,8 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "test": "turbo run test",
-    "check": "turbo run build test",
+    "test": "turbo run test --output-logs=errors-only",
+    "check": "turbo run build test --output-logs=errors-only",
     "dev:discord": "pnpm --filter discord-bot dev",
     "dev:slack": "pnpm --filter slack-bot dev",
     "deploy:discord": "pnpm --filter discord-bot deploy-commands"

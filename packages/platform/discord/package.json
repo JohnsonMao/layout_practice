@@ -1,0 +1,32 @@
+{
+  "name": "@agent-relay/platform-discord",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@agent-relay/core": "workspace:*",
+    "discord.js": "catalog:prod",
+    "dotenv": "catalog:prod",
+    "sql.js": "catalog:prod"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "typescript": "catalog:dev",
+    "@types/node": "catalog:dev",
+    "@types/sql.js": "catalog:dev",
+    "vitest": "catalog:dev",
+    "tsup": "catalog:dev"
+  }
+}

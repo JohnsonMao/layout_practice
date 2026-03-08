@@ -35,6 +35,7 @@ function getEffectiveModel(opts: RelayRequest['options']): string {
 }
 
 function buildArgs(request: RelayRequest): string[] {
+  const workspace = request.workspace ?? process.cwd()
   const args = [
     '-p',
     request.prompt,
@@ -44,7 +45,7 @@ function buildArgs(request: RelayRequest): string[] {
     '--model',
     getEffectiveModel(request.options),
     '--workspace',
-    request.workspace,
+    workspace,
   ]
   const opts = request.options
   if (opts?.mode)
@@ -53,13 +54,14 @@ function buildArgs(request: RelayRequest): string[] {
 }
 
 function buildStreamArgs(request: RelayRequest): string[] {
+  const workspace = request.workspace ?? process.cwd()
   const args: string[] = [
     '-p',
     request.prompt,
     '--model',
     getEffectiveModel(request.options),
     '--workspace',
-    request.workspace,
+    workspace,
     '--output-format',
     'stream-json',
     ...STREAM_COMMON_ARGS,
@@ -188,7 +190,7 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): C
     const args = buildArgs(request)
     const { stdout, stderr, code, errorCode } = await runCli(args, {
       timeoutMs,
-      cwd: request.workspace,
+      cwd: request.workspace ?? process.cwd(),
     })
     if (errorCode === 'ENOENT') {
       return {
@@ -226,7 +228,7 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): C
       const child = spawn(CURSOR_CLI_COMMAND, args, {
         stdio: ['ignore', 'pipe', 'pipe'],
         shell: false,
-        cwd: request.workspace,
+        cwd: request.workspace ?? process.cwd(),
       })
 
       const pendingChunks: StreamChunk[] = []
