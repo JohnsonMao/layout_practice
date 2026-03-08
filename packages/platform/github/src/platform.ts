@@ -1,12 +1,12 @@
-import type { Octokit } from '@octokit/rest'
 import type { Platform, RelayContext } from '@agent-relay/core'
-import { createWebhookServer } from './server'
+import type { Octokit } from '@octokit/rest'
 import { getConfig } from './config'
-import { parseWebhookPayload } from './payload'
-import { matchTrigger } from './trigger'
-import { runRelay } from './relay'
 import { createOctokit, postComment } from './github'
-import { createRateLimiter, parseAllowlist, isRepoAllowed } from './rate-limit'
+import { parseWebhookPayload } from './payload'
+import { createRateLimiter, isRepoAllowed, parseAllowlist } from './rate-limit'
+import { runRelay } from './relay'
+import { createWebhookServer } from './server'
+import { matchTrigger } from './trigger'
 
 const RATE_LIMIT_MESSAGE = '請求過於頻繁，請稍後再試'
 
@@ -47,15 +47,19 @@ export class PlatformGitHub implements Platform {
       port,
       webhookSecret,
       onPayload: async (_rawBody, parsed, event) => {
-        if (!this.octokit) return
+        if (!this.octokit)
+          return
         const payload = parsed as Record<string, unknown>
         const ctx = event ? parseWebhookPayload(event, payload) : null
-        if (!ctx) return
+        if (!ctx)
+          return
 
-        if (!isRepoAllowed(ctx.owner, ctx.repo, allowlist)) return
+        if (!isRepoAllowed(ctx.owner, ctx.repo, allowlist))
+          return
 
         const trigger = matchTrigger(ctx.commentBody, maxPromptLength)
-        if (!trigger.matched) return
+        if (!trigger.matched)
+          return
 
         const repoKey = `${ctx.owner}/${ctx.repo}`
         if (rateLimiter && !rateLimiter.check(repoKey)) {
@@ -75,7 +79,8 @@ export class PlatformGitHub implements Platform {
         }
 
         const outcome = await runRelay(trigger.prompt, this.ctx!)
-        if (rateLimiter) rateLimiter.record(repoKey)
+        if (rateLimiter)
+          rateLimiter.record(repoKey)
 
         const bodyToPost = outcome.success ? outcome.result : `❌ ${outcome.userMessage}`
 
@@ -98,7 +103,7 @@ export class PlatformGitHub implements Platform {
 
   async stop(): Promise<void> {
     if (this.server && this.server.close) {
-      await new Promise<void>((resolve) => this.server.close(() => resolve()))
+      await new Promise<void>(resolve => this.server.close(() => resolve()))
       this.server = null
     }
   }

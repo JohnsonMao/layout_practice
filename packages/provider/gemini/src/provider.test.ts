@@ -1,6 +1,6 @@
-import { describe, it, expect } from 'vitest'
-import { createGeminiProvider, toUserFacingError } from './provider'
+import { describe, expect, it } from 'vitest'
 import { getDefaultModelFromEnv, resolveConfig } from './config'
+import { createGeminiProvider, toUserFacingError } from './provider'
 
 describe('config', () => {
   it('resolveConfig uses overrides', () => {
@@ -56,9 +56,9 @@ describe('createGeminiProvider', () => {
 
   it('executeStream yields error when API key not set', async () => {
     const provider = createGeminiProvider({ apiKey: '' })
-    const chunks: Array<{ type: string; error?: { code: string } }> = []
+    const chunks: Array<{ type: string, error?: { code: string } }> = []
     for await (const ch of provider.executeStream({ prompt: 'hi', workspace: '/tmp' })) {
-      chunks.push(ch as { type: string; error?: { code: string } })
+      chunks.push(ch as { type: string, error?: { code: string } })
     }
     expect(chunks.length).toBe(1)
     expect(chunks[0].type).toBe('error')

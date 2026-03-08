@@ -1,8 +1,3 @@
-/**
- * Provider for GitHub Copilot SDK: implements StreamingProvider + createChat.
- * Requires Copilot CLI installed. Auth and model are read from env (getGithubTokenFromEnv / getDefaultModelFromEnv).
- */
-import { CopilotClient } from '@github/copilot-sdk'
 import type {
   RelayRequest,
   RelayResponse,
@@ -10,11 +5,16 @@ import type {
   StreamChunk,
   StreamingProvider,
 } from '@agent-relay/core'
+/**
+ * Provider for GitHub Copilot SDK: implements StreamingProvider + createChat.
+ * Requires Copilot CLI installed. Auth and model are read from env (getGithubTokenFromEnv / getDefaultModelFromEnv).
+ */
+import { CopilotClient } from '@github/copilot-sdk'
 
 const DEFAULT_MODEL = 'gpt-5'
 const STREAM_TIMEOUT_MS = 300_000
 
-export type CopilotProviderConfig = {
+export interface CopilotProviderConfig {
   timeoutMs?: number
 }
 
@@ -34,7 +34,7 @@ function getDefaultModelFromEnv(): string {
 
 /** Provider that extends StreamingProvider with createChat (session id for resume). */
 export interface CopilotProvider extends StreamingProvider {
-  createChat(workspace?: string): Promise<{ chatId: string }>
+  createChat: (workspace?: string) => Promise<{ chatId: string }>
 }
 
 /**
@@ -109,19 +109,23 @@ export function createCopilotProvider(config: CopilotProviderConfig = {}): Copil
 
     const chunks: StreamChunk[] = []
     let resolveNext: () => void = () => {}
-    let nextPromise = new Promise<void>(r => { resolveNext = r })
+    let nextPromise = new Promise<void>((r) => {
+      resolveNext = r
+    })
     let ended = false
 
     const push = (chunk: StreamChunk): void => {
-      if (ended)
+      if (ended) {
         return
+      }
       chunks.push(chunk)
       resolveNext()
     }
 
     const finish = (): void => {
-      if (ended)
+      if (ended) {
         return
+      }
       ended = true
       resolveNext()
     }
@@ -186,9 +190,14 @@ export function createCopilotProvider(config: CopilotProviderConfig = {}): Copil
       return
     }
 
-    while (!ended || chunks.length > 0) {
+    while (true) {
+      if (ended && chunks.length === 0) {
+        break
+      }
       await nextPromise
-      nextPromise = new Promise<void>(r => { resolveNext = r })
+      nextPromise = new Promise<void>((r) => {
+        resolveNext = r
+      })
       while (chunks.length > 0) {
         const chunk = chunks.shift()!
         if (chunk.type === 'done') {

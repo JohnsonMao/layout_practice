@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { createRateLimiter, parseAllowlist, isRepoAllowed } from './rate-limit.js'
+import { describe, expect, it } from 'vitest'
+import { createRateLimiter, isRepoAllowed, parseAllowlist } from './rate-limit.js'
 
 describe('createRateLimiter', () => {
   it('allows requests under limit', () => {

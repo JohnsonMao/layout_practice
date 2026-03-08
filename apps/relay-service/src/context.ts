@@ -2,7 +2,7 @@
  * Composition root: builds relay and create-chat provider from RELAY_PROVIDER.
  * This app-level module is responsible for wiring concrete providers together.
  */
-import { createRelay, type RelayContext, type RelayProviderType, type SessionWithProvider, type Relay, RELAY_PROVIDER_OPTIONS } from '@agent-relay/core'
+import { createRelay, type Relay, RELAY_PROVIDER_OPTIONS, type RelayContext, type RelayProviderType, type SessionWithProvider } from '@agent-relay/core'
 import { createCopilotProvider, toUserFacingError } from '@agent-relay/provider-copilot-sdk'
 import { createCursorCliProvider } from '@agent-relay/provider-cursor-cli'
 import { createGeminiProvider } from '@agent-relay/provider-gemini'
@@ -28,18 +28,25 @@ const DISPLAY_NAMES: Record<RelayProviderType, string> = {
 export function createRelayContext(): RelayContext {
   const relayProvider = getRelayProviderFromEnv()
   const providerCursor = createCursorCliProvider()
-  const providerCopilot =
-    relayProvider === 'copilot-sdk' ? createCopilotProvider() : null
-  const providerGemini =
-    relayProvider === 'gemini' ? createGeminiProvider() : null
-  
+  const providerCopilot
+    = relayProvider === 'copilot-sdk' ? createCopilotProvider() : null
+  const providerGemini
+    = relayProvider === 'gemini' ? createGeminiProvider() : null
+
   const relayCursor = createRelay({ provider: providerCursor })
   const relayCopilot = providerCopilot ? createRelay({ provider: providerCopilot }) : null
   const relayGemini = providerGemini ? createRelay({ provider: providerGemini }) : null
-  
-  const activeCreateChatProvider =
-    relayProvider === 'copilot-sdk' ? providerCopilot! :
-    relayProvider === 'gemini' ? providerGemini! : providerCursor
+
+  let activeCreateChatProvider: any
+  if (relayProvider === 'copilot-sdk') {
+    activeCreateChatProvider = providerCopilot!
+  }
+  else if (relayProvider === 'gemini') {
+    activeCreateChatProvider = providerGemini!
+  }
+  else {
+    activeCreateChatProvider = providerCursor
+  }
 
   const formatCreateChatError = (err: unknown): string => {
     if (relayProvider === 'copilot-sdk')

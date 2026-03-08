@@ -15,7 +15,7 @@ const FLAGS = {
 export async function loadPlatforms(): Promise<Platform[]> {
   const enabledNames = (process.env.RELAY_PLATFORMS ?? '')
     .split(',')
-    .map((s) => s.trim().toLowerCase())
+    .map(s => s.trim().toLowerCase())
     .filter(Boolean)
 
   if (enabledNames.length === 0) {
@@ -30,17 +30,21 @@ export async function loadPlatforms(): Promise<Platform[]> {
       if (FLAGS.discord) {
         const { PlatformDiscord } = await import('@agent-relay/platform-discord')
         platforms.push(new PlatformDiscord())
-      } else {
+      }
+      else {
         console.warn('[RelayService] Discord platform is disabled by build flag.')
       }
-    } else if (name === 'github') {
+    }
+    else if (name === 'github') {
       if (FLAGS.github) {
         const { PlatformGitHub } = await import('@agent-relay/platform-github')
         platforms.push(new PlatformGitHub())
-      } else {
+      }
+      else {
         console.warn('[RelayService] GitHub platform is disabled by build flag.')
       }
-    } else {
+    }
+    else {
       console.warn(`[RelayService] Unknown platform: ${name}`)
     }
   }
@@ -51,9 +55,10 @@ export async function loadPlatforms(): Promise<Platform[]> {
 export async function stopAll(platforms: Platform[]) {
   for (const p of platforms) {
     try {
-      console.log(`[RelayService] Stopping ${p.name}...`)
+      process.stdout.write(`[RelayService] Stopping ${p.name}...\n`)
       await p.stop()
-    } catch (err) {
+    }
+    catch (err) {
       console.error(`[RelayService] Error stopping ${p.name}:`, err)
     }
   }

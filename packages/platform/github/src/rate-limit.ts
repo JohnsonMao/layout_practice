@@ -9,10 +9,12 @@ export function createRateLimiter(options: { windowMs?: number, maxPerWindow?: n
 
   function prune(key: string): void {
     const list = timestampsByKey.get(key)
-    if (!list) return
+    if (!list)
+      return
     const cutoff = Date.now() - windowMs
     const kept = list.filter(ts => ts > cutoff)
-    if (kept.length === 0) timestampsByKey.delete(key)
+    if (kept.length === 0)
+      timestampsByKey.delete(key)
     else timestampsByKey.set(key, kept)
   }
 
@@ -32,17 +34,20 @@ export function createRateLimiter(options: { windowMs?: number, maxPerWindow?: n
 
 /** Parse comma-separated "owner/repo" list; empty or unset = allow all. */
 export function parseAllowlist(envValue: string | undefined): Set<string> | null {
-  if (envValue == null || envValue.trim() === '') return null
+  if (envValue == null || envValue.trim() === '')
+    return null
   const set = new Set<string>()
   for (const s of envValue.split(',')) {
     const t = s.trim()
-    if (t) set.add(t)
+    if (t)
+      set.add(t)
   }
   return set.size > 0 ? set : null
 }
 
 /** Return true if repo is allowed (allowlist null = all allowed). */
 export function isRepoAllowed(owner: string, repo: string, allowlist: Set<string> | null): boolean {
-  if (allowlist == null) return true
+  if (allowlist == null)
+    return true
   return allowlist.has(`${owner}/${repo}`)
 }

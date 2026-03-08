@@ -1,5 +1,4 @@
 import { Octokit } from '@octokit/rest'
-import type { WebhookContext } from './payload.js'
 
 /** GitHub comment body limit (leave margin). */
 const COMMENT_MAX_LENGTH = 65_500

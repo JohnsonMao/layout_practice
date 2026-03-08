@@ -1,18 +1,20 @@
+export { findRepoRoot, loadEnvFromRepoRoot } from './env'
+export { createRelay, type Relay } from './relay'
 export type {
+  CreateChatProvider,
   DoneStreamChunk,
   ErrorStreamChunk,
-  Provider,
   Platform,
+  Provider,
   RelayContext,
-  RelayProviderType,
-  CreateChatProvider,
-  SessionWithProvider,
   RelayError,
+  RelayProviderType,
   RelayRequest,
   RelayRequestOptions,
   RelayResponse,
   RelayResponseError,
   RelayResponseSuccess,
+  SessionWithProvider,
   StreamChunk,
   StreamingProvider,
   SystemStreamChunk,
@@ -20,5 +22,3 @@ export type {
   ToolCallStreamChunk,
 } from './types'
 export { RELAY_PROVIDER_OPTIONS } from './types'
-export { createRelay, type Relay } from './relay'
-export { loadEnvFromRepoRoot, findRepoRoot } from './env'

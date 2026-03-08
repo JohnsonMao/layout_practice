@@ -1,13 +1,14 @@
-import { spawn } from 'node:child_process'
 import type { RelayRequest, RelayResponse, StreamChunk, StreamingProvider } from '@agent-relay/core'
+import type { Buffer } from 'node:buffer'
 import type { CursorStreamEvent } from './types'
+import { spawn } from 'node:child_process'
 
 /** Provider that extends StreamingProvider with create-chat and models. */
 export interface CursorCliProvider extends StreamingProvider {
   /** Create a new empty chat; returns its ID (for use with --resume). */
-  createChat(workspace?: string): Promise<{ chatId: string }>
+  createChat: (workspace?: string) => Promise<{ chatId: string }>
   /** List available model IDs. */
-  listModels(): Promise<string[]>
+  listModels: () => Promise<string[]>
 }
 
 export const CURSOR_CLI_NOT_FOUND = 'CURSOR_CLI_NOT_FOUND'
@@ -134,7 +135,7 @@ interface RunCliResult {
 
 function runCli(
   args: string[],
-  options: { timeoutMs: number; cwd: string },
+  options: { timeoutMs: number, cwd: string },
 ): Promise<RunCliResult> {
   const { timeoutMs, cwd } = options
   return new Promise((resolve) => {
@@ -145,8 +146,6 @@ function runCli(
     })
     let stdout = ''
     let stderr = ''
-    child.stdout?.on('data', (chunk: Buffer) => { stdout += chunk.toString() })
-    child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
     const timer = setTimeout(() => {
       child.kill('SIGTERM')
       resolve({
@@ -156,21 +155,29 @@ function runCli(
         errorCode: 'TIMEOUT',
       })
     }, timeoutMs)
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString()
+    })
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString()
+    })
     child.on('error', (err: NodeJS.ErrnoException) => {
       clearTimeout(timer)
-      if (err.code === 'ENOENT')
+      if (err.code === 'ENOENT') {
         resolve({
           stdout: '',
           stderr: '',
           code: null,
           errorCode: 'ENOENT',
         })
-      else
+      }
+      else {
         resolve({
           stdout: '',
           stderr: err.message ?? String(err),
           code: null,
         })
+      }
     })
     child.on('close', (code, signal) => {
       clearTimeout(timer)
@@ -248,38 +255,6 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): C
         return lines
       }
 
-      child.stderr?.on('data', (chunk: Buffer) => { stderr += chunk.toString() })
-
-      child.stdout?.on('data', (chunk: Buffer) => {
-        for (const line of push(chunk)) {
-          const parsed = parseStreamLine(line)
-          if (parsed) {
-            pendingChunks.push(parsed)
-            wake()
-          }
-        }
-      })
-
-      const waitNext = () => new Promise<void>(resolve => { resolveNext = resolve })
-
-      child.on('error', (err: Error & { code?: string }) => {
-        clearTimeout(timer)
-        if (err.code === 'ENOENT')
-          pendingChunks.push({
-            type: 'error',
-            error: {
-              code: CURSOR_CLI_NOT_FOUND,
-              message: 'Cursor CLI not found. Install it: https://cursor.com/docs/cli/overview',
-            },
-          })
-        else
-          pendingChunks.push({
-            type: 'error',
-            error: { code: CURSOR_CLI_EXIT_ERROR, message: err.message ?? String(err) },
-          })
-        wake()
-      })
-
       const timer = setTimeout(() => {
         child.kill('SIGTERM')
         pendingChunks.push({
@@ -291,6 +266,44 @@ export function createCursorCliProvider(config: CursorCliProviderConfig = {}): C
         })
         wake()
       }, timeoutMs)
+
+      child.stderr?.on('data', (chunk: Buffer) => {
+        stderr += chunk.toString()
+      })
+
+      child.stdout?.on('data', (chunk: Buffer) => {
+        for (const line of push(chunk)) {
+          const parsed = parseStreamLine(line)
+          if (parsed) {
+            pendingChunks.push(parsed)
+            wake()
+          }
+        }
+      })
+
+      const waitNext = () => new Promise<void>((resolve) => {
+        resolveNext = resolve
+      })
+
+      child.on('error', (err: Error & { code?: string }) => {
+        clearTimeout(timer)
+        if (err.code === 'ENOENT') {
+          pendingChunks.push({
+            type: 'error',
+            error: {
+              code: CURSOR_CLI_NOT_FOUND,
+              message: 'Cursor CLI not found. Install it: https://cursor.com/docs/cli/overview',
+            },
+          })
+        }
+        else {
+          pendingChunks.push({
+            type: 'error',
+            error: { code: CURSOR_CLI_EXIT_ERROR, message: err.message ?? String(err) },
+          })
+        }
+        wake()
+      })
 
       child.on('close', (code, signal) => {
         clearTimeout(timer)

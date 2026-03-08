@@ -1,17 +1,19 @@
-import { describe, it, expect } from 'vitest'
-import { matchTrigger, DEFAULT_MAX_PROMPT_LENGTH } from './trigger.js'
+import { describe, expect, it } from 'vitest'
+import { DEFAULT_MAX_PROMPT_LENGTH, matchTrigger } from './trigger.js'
 
 describe('matchTrigger', () => {
   it('matches /ask prefix and returns prompt', () => {
     const r = matchTrigger('/ask  hello world')
     expect(r.matched).toBe(true)
-    if (r.matched) expect(r.prompt).toBe('hello world')
+    if (r.matched)
+      expect(r.prompt).toBe('hello world')
   })
 
   it('matches @bot prefix', () => {
     const r = matchTrigger('@bot summarize this')
     expect(r.matched).toBe(true)
-    if (r.matched) expect(r.prompt).toBe('summarize this')
+    if (r.matched)
+      expect(r.prompt).toBe('summarize this')
   })
 
   it('returns matched false when no prefix', () => {
@@ -36,6 +38,7 @@ describe('matchTrigger', () => {
   it('matches with custom max length', () => {
     const r = matchTrigger('/ask hi', 10)
     expect(r.matched).toBe(true)
-    if (r.matched) expect(r.prompt).toBe('hi')
+    if (r.matched)
+      expect(r.prompt).toBe('hi')
   })
 })

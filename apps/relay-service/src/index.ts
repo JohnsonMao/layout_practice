@@ -1,9 +1,9 @@
-import 'dotenv/config'
-import { loadPlatforms, stopAll } from './loader'
 import { createRelayContext } from './context'
+import { loadPlatforms, stopAll } from './loader'
+import 'dotenv/config'
 
 async function main() {
-  console.log('[RelayService] Starting...')
+  process.stdout.write('[RelayService] Starting...\n')
 
   const ctx = createRelayContext()
   const platforms = await loadPlatforms()
@@ -15,10 +15,11 @@ async function main() {
   // Phase 1: Init all
   try {
     for (const p of platforms) {
-      console.log(`[RelayService] Initializing ${p.name}...`)
+      process.stdout.write(`[RelayService] Initializing ${p.name}...\n`)
       await p.init(ctx)
     }
-  } catch (err) {
+  }
+  catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[RelayService] Initialization failed: ${msg}`)
     process.exit(1) // Fail-fast
@@ -27,10 +28,11 @@ async function main() {
   // Phase 2: Start all
   try {
     for (const p of platforms) {
-      console.log(`[RelayService] Starting ${p.name}...`)
+      process.stdout.write(`[RelayService] Starting ${p.name}...\n`)
       await p.start()
     }
-  } catch (err) {
+  }
+  catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[RelayService] Startup failed: ${msg}`)
     // On startup failure, try to stop already started ones
@@ -38,11 +40,11 @@ async function main() {
     process.exit(1)
   }
 
-  console.log('[RelayService] All platforms started.')
+  process.stdout.write('[RelayService] All platforms started.\n')
 
   // Graceful shutdown
   const handleShutdown = async (signal: string) => {
-    console.log(`[RelayService] Received ${signal}. Shutting down...`)
+    process.stdout.write(`[RelayService] Received ${signal}. Shutting down...\n`)
     await stopAll(platforms)
     process.exit(0)
   }

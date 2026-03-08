@@ -1,13 +1,13 @@
-import { defineConfig } from 'tsup'
-import { config } from 'dotenv'
 import { resolve } from 'node:path'
+import { config } from 'dotenv'
+import { defineConfig } from 'tsup'
 
 // Load .env from workspace root
 config({ path: resolve(__dirname, '../../.env') })
 
 const relayPlatforms = (process.env.RELAY_PLATFORMS ?? '')
   .split(',')
-  .map((s) => s.trim().toLowerCase())
+  .map(s => s.trim().toLowerCase())
   .filter(Boolean)
 
 // If empty, default to true for all (useful for dev)

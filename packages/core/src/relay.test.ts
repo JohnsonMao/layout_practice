@@ -1,6 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
-import { createRelay } from './relay'
 import type { Provider, RelayResponse, StreamingProvider } from './types'
+import { describe, expect, it, vi } from 'vitest'
+import { createRelay } from './relay'
 
 describe('createRelay', () => {
   it('runStream yields error when provider is not configured', async () => {

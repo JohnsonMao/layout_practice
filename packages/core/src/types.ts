@@ -36,7 +36,7 @@ export type RelayResponse = RelayResponseSuccess | RelayResponseError
 
 /** Provider interface: accepts relay request, returns relay response. */
 export interface Provider {
-  execute(request: RelayRequest): Promise<RelayResponse>
+  execute: (request: RelayRequest) => Promise<RelayResponse>
 }
 
 /** Incremental assistant text. */
@@ -80,7 +80,7 @@ export type StreamChunk =
 
 /** Optional streaming: provider may implement to support runStream. */
 export interface StreamingProvider extends Provider {
-  executeStream(request: RelayRequest): AsyncGenerator<StreamChunk, void, undefined>
+  executeStream: (request: RelayRequest) => AsyncGenerator<StreamChunk, void, undefined>
 }
 
 /**
@@ -98,17 +98,17 @@ export interface Platform {
    * Should throw if required configuration is missing.
    * Receives the orchestration context via Dependency Injection.
    */
-  init(ctx: RelayContext): Promise<void>
+  init: (ctx: RelayContext) => Promise<void>
 
   /**
    * Start listening for events.
    */
-  start(): Promise<void>
+  start: () => Promise<void>
 
   /**
    * Stop the platform and cleanup resources.
    */
-  stop(): Promise<void>
+  stop: () => Promise<void>
 }
 
 /** Provider identifiers. */
@@ -122,7 +122,7 @@ export interface SessionWithProvider {
 
 /** Interface for creating a new chat session. */
 export interface CreateChatProvider {
-  createChat(workspace?: string): Promise<{ chatId: string }>
+  createChat: (workspace?: string) => Promise<{ chatId: string }>
 }
 
 /** Orchestration context for relay services. */
@@ -134,9 +134,9 @@ export interface RelayContext {
   /** Provider for creating new chats. */
   activeCreateChatProvider: CreateChatProvider
   /** Format errors from the active provider into user-facing messages. */
-  formatCreateChatError(err: unknown): string
+  formatCreateChatError: (err: unknown) => string
   /** Return the Relay for the session's provider; null if that provider is not enabled. */
-  getRelayForSession(session: SessionWithProvider): import('./relay').Relay | null
+  getRelayForSession: (session: SessionWithProvider) => import('./relay').Relay | null
   /** User-facing message when getRelayForSession(session) is null. */
-  getRunStreamUnavailableMessage(session: SessionWithProvider): string
+  getRunStreamUnavailableMessage: (session: SessionWithProvider) => string
 }

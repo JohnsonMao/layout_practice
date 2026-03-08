@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { Buffer } from 'node:buffer'
 import crypto from 'node:crypto'
+import { describe, expect, it } from 'vitest'
 import { verifyWebhookSignature } from './verify.js'
 
 function sign(secret: string, body: Buffer): string {

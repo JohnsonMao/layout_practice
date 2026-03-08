@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer'
 import { createServer } from 'node:http'
 import { verifyWebhookSignature } from './verify.js'
 
@@ -57,7 +58,7 @@ export function createWebhookServer(options: WebhookServerOptions): ReturnType<t
   })
 
   server.listen(port, () => {
-    console.log(`Webhook server listening on port ${port}`)
+    process.stdout.write(`Webhook server listening on port ${port}\n`)
   })
 
   return server

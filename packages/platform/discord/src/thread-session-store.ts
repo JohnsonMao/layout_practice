@@ -1,8 +1,9 @@
-import type { Database, SqlJsStatic } from 'sql.js'
-import initSqlJs from 'sql.js'
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
-import { dirname } from 'node:path'
 import type { RelayProviderType } from '@agent-relay/core'
+import type { Database, SqlJsStatic } from 'sql.js'
+import { Buffer } from 'node:buffer'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname } from 'node:path'
+import initSqlJs from 'sql.js'
 
 const DEFAULT_DB_PATH = 'data/thread_sessions.sqlite'
 
@@ -45,7 +46,7 @@ function persistDb(): void {
   writeFileSync(path, Buffer.from(data))
 }
 
-export type ThreadSession = {
+export interface ThreadSession {
   sessionId: string
   workspace: string
   model?: string
@@ -69,8 +70,8 @@ export async function getSession(threadId: string): Promise<ThreadSession | null
   stmt.free()
   if (!row)
     return null
-  const provider: RelayProviderType =
-    row.provider === 'copilot-sdk' ? 'copilot-sdk' : 'cursor-cli'
+  const provider: RelayProviderType
+    = row.provider === 'copilot-sdk' ? 'copilot-sdk' : 'cursor-cli'
   return {
     sessionId: row.sessionId,
     workspace: row.workspace ?? process.cwd(),

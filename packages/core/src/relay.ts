@@ -25,7 +25,7 @@ function createRunStream(provider: Provider | null) {
     }
 
     if (isStreamingProvider(provider)) {
-      yield* provider.executeStream(request)
+      yield * provider.executeStream(request)
       return
     }
 
@@ -55,7 +55,7 @@ export interface RelayConfig {
 }
 
 export interface Relay {
-  runStream(request: RelayRequest): AsyncGenerator<StreamChunk, void, undefined>
+  runStream: (request: RelayRequest) => AsyncGenerator<StreamChunk, void, undefined>
 }
 
 /**

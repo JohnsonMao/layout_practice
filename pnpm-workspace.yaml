@@ -1,22 +1,25 @@
 packages:
-  - "apps/relay-service"
-  - "packages/core"
-  - "packages/platform/*"
-  - "packages/provider/*"
+  - apps/relay-service
+  - packages/config
+  - packages/core
+  - 'packages/platform/*'
+  - 'packages/provider/*'
 
 catalogs:
   dev:
-    typescript: "^5.7.3"
-    vitest: "^2.1.0"
-    turbo: "^2.3.0"
-    "@types/node": "^22.0.0"
-    "@types/sql.js": "^1.4.9"
-    tsx: "^4.19.0"
-    tsup: "^8.3.5"
+    '@antfu/eslint-config': ^3.16.0
+    eslint: ^9.16.0
+    typescript: ^5.7.3
+    vitest: ^2.1.0
+    turbo: ^2.3.0
+    '@types/node': ^22.0.0
+    '@types/sql.js': ^1.4.9
+    tsx: ^4.19.0
+    tsup: ^8.3.5
   prod:
-    "@google/genai": "^1.0.0"
-    "@octokit/rest": "^21.0.2"
-    "@octokit/webhooks": "^14.0.0"
-    discord.js: "^14.16.3"
-    dotenv: "^17.3.1"
-    sql.js: "^1.14.0"
+    '@google/genai': ^1.0.0
+    '@octokit/rest': ^21.0.2
+    '@octokit/webhooks': ^14.0.0
+    discord.js: ^14.16.3
+    dotenv: ^17.3.1
+    sql.js: ^1.14.0

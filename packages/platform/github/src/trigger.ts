@@ -31,7 +31,7 @@ export function matchTrigger(
       if (after.length > maxLength) {
         return {
           matched: true,
-          prompt: after.slice(0, maxLength) + '\n\n[Input truncated due to length limit.]',
+          prompt: `${after.slice(0, maxLength)}\n\n[Input truncated due to length limit.]`,
         }
       }
       return { matched: true, prompt: after }

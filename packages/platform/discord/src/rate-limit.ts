@@ -1,5 +1,5 @@
 /** In-memory per-user rate limit. Default: 5 requests per 60 seconds. */
-export function createRateLimiter(options: { windowMs?: number; maxPerWindow?: number } = {}) {
+export function createRateLimiter(options: { windowMs?: number, maxPerWindow?: number } = {}) {
   const windowMs = options.windowMs ?? 60_000
   const maxPerWindow = options.maxPerWindow ?? 5
   const timestampsByUser = new Map<string, number[]>()

@@ -1,10 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { runRelay } from './relay.js'
 import type { RelayContext } from '@agent-relay/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { runRelay } from './relay.js'
 
 const mockContext = {
   getRelayForSession: () => ({
-    runStream: async function* (request: { prompt: string }) {
+    async *runStream(request: { prompt: string }) {
       if (request.prompt === 'fail')
         yield { type: 'error', error: { code: 'ERR', message: 'User-facing error' } }
       else
@@ -23,12 +23,14 @@ describe('runRelay', () => {
   it('returns success with collected text', async () => {
     const outcome = await runRelay('hello', process.cwd(), mockContext)
     expect(outcome.success).toBe(true)
-    if (outcome.success) expect(outcome.result).toBe('Hello')
+    if (outcome.success)
+      expect(outcome.result).toBe('Hello')
   })
 
   it('returns user-facing error when stream yields error chunk', async () => {
     const outcome = await runRelay('fail', process.cwd(), mockContext)
     expect(outcome.success).toBe(false)
-    if (!outcome.success) expect(outcome.userMessage).toBe('User-facing error')
+    if (!outcome.success)
+      expect(outcome.userMessage).toBe('User-facing error')
   })
 })

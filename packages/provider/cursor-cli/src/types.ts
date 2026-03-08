@@ -64,7 +64,7 @@ export interface CursorToolCallEvent {
 /** Per-tool payload in tool_call: started has args, completed has result. Shared shape for all MCP tools. */
 export interface CursorToolCallPayload {
   args?: Record<string, unknown>
-  result?: { success?: unknown; rejected?: unknown }
+  result?: { success?: unknown, rejected?: unknown }
 }
 
 export interface CursorToolCallMap {

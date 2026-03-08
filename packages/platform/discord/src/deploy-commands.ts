@@ -1,6 +1,6 @@
 import { REST, Routes } from 'discord.js'
-import { getConfig } from './config'
 import { commands as commandList } from './commands/index'
+import { getConfig } from './config'
 
 async function deploy(): Promise<void> {
   const { token, clientId, guildId } = getConfig()
@@ -14,18 +14,18 @@ async function deploy(): Promise<void> {
       Routes.applicationGuildCommands(clientId, guildId),
       { body: commands },
     )
-    console.log(`Registered ${commands.length} command(s) for guild ${guildId}.`)
+    process.stdout.write(`Registered ${commands.length} command(s) for guild ${guildId}.\n`)
   }
   else {
     await rest.put(
       Routes.applicationCommands(clientId),
       { body: commands },
     )
-    console.log(`Registered ${commands.length} command(s) globally.`)
+    process.stdout.write(`Registered ${commands.length} command(s) globally.\n`)
   }
 }
 
-deploy().catch(err => {
+deploy().catch((err) => {
   console.error(err)
   process.exit(1)
 })

@@ -1,4 +1,4 @@
-import type { RelayRequest, StreamChunk, RelayContext } from '@agent-relay/core'
+import type { RelayContext, RelayRequest, StreamChunk } from '@agent-relay/core'
 
 export type RelayOutcome =
   | { success: true, result: string }

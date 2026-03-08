@@ -1,3 +1,4 @@
+import type { Platform, RelayContext, StreamChunk } from '@agent-relay/core'
 import {
   ChannelType,
   Client,
@@ -7,10 +8,9 @@ import {
   type TextChannel,
   type ThreadChannel,
 } from 'discord.js'
-import type { StreamChunk, Platform, RelayContext } from '@agent-relay/core'
 import { getConfig, truncateForDiscord } from './config'
 import { createRateLimiter } from './rate-limit'
-import { getSession, setSession, deleteSession } from './thread-session-store'
+import { deleteSession, getSession, setSession } from './thread-session-store'
 
 const RATE_LIMIT_PER_MIN = 5
 const THINKING_LABEL = '💭 Thinking...'
@@ -42,7 +42,8 @@ export class PlatformDiscord implements Platform {
   }
 
   async start(): Promise<void> {
-    if (!this.client) throw new Error('Client not initialized')
+    if (!this.client)
+      throw new Error('Client not initialized')
     const { token } = getConfig()
     await this.client.login(token)
   }
@@ -55,13 +56,14 @@ export class PlatformDiscord implements Platform {
   }
 
   private setupEvents(): void {
-    if (!this.client) return
+    if (!this.client)
+      return
 
-    this.client.once(Events.ClientReady, c => {
-      console.log(`[Discord] Logged in as ${c.user.tag}.`)
+    this.client.once(Events.ClientReady, (c) => {
+      process.stdout.write(`[Discord] Logged in as ${c.user.tag}.\n`)
     })
 
-    this.client.on(Events.InteractionCreate, async interaction => {
+    this.client.on(Events.InteractionCreate, async (interaction) => {
       if (interaction.isChatInputCommand()) {
         if (interaction.commandName === 'create-chat') {
           const title = interaction.options.getString('title', true)
@@ -76,15 +78,16 @@ export class PlatformDiscord implements Platform {
             return
           }
           await interaction.deferReply()
-          await this.handleCreateChat(title, interaction.user.id, textChannel, async content => {
+          await this.handleCreateChat(title, interaction.user.id, textChannel, async (content) => {
             await interaction.editReply(content)
           })
         }
       }
     })
 
-    this.client.on(Events.MessageCreate, async message => {
-      if (!this.client) return
+    this.client.on(Events.MessageCreate, async (message) => {
+      if (!this.client)
+        return
       if (message.author.bot || message.author.id === this.client.user?.id)
         return
       const channel = message.channel
@@ -113,7 +116,7 @@ export class PlatformDiscord implements Platform {
       statusMsgRef: { current: Message }
       onSession?: (sessionId: string) => void
     },
-  ): Promise<{ success: boolean; error?: string }> {
+  ): Promise<{ success: boolean, error?: string }> {
     const { thread, statusMsgRef, onSession } = options
     let errorMsg: string | undefined
 
@@ -181,7 +184,8 @@ export class PlatformDiscord implements Platform {
     })
     await deferEditReply(`Thread created: <#${thread.id}>`)
 
-    if (!this.ctx) return
+    if (!this.ctx)
+      return
 
     try {
       const { chatId } = await this.ctx.activeCreateChatProvider.createChat()
@@ -201,7 +205,7 @@ export class PlatformDiscord implements Platform {
     thread: ThreadChannel,
     content: string,
     userId: string,
-    session: { sessionId: string; workspace?: string; model?: string; provider?: string },
+    session: { sessionId: string, workspace?: string, model?: string, provider?: string },
   ): Promise<void> {
     if (!this.rateLimiter.check(userId)) {
       await thread.send('⏱️ Rate limit exceeded. Please try again later (max 5 per minute).').catch(() => {})
@@ -212,7 +216,8 @@ export class PlatformDiscord implements Platform {
     this.processingThreadIds.add(thread.id)
     const statusMsgRef = { current: await thread.send(THINKING_LABEL) }
 
-    if (!this.ctx) return
+    if (!this.ctx)
+      return
 
     const relay = this.ctx.getRelayForSession(session as any)
     if (!relay) {

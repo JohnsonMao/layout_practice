@@ -1,15 +1,15 @@
-/**
- * Provider for Google Gemini API: implements Provider and StreamingProvider.
- * Config via GEMINI_API_KEY, optional GEMINI_MODEL; factory overrides supported.
- */
-import { GoogleGenAI } from '@google/genai'
 import type {
   RelayRequest,
   RelayResponse,
   StreamChunk,
   StreamingProvider,
 } from '@agent-relay/core'
-import { resolveConfig, type GeminiProviderConfig } from './config'
+/**
+ * Provider for Google Gemini API: implements Provider and StreamingProvider.
+ * Config via GEMINI_API_KEY, optional GEMINI_MODEL; factory overrides supported.
+ */
+import { GoogleGenAI } from '@google/genai'
+import { type GeminiProviderConfig, resolveConfig } from './config'
 
 const GEMINI_AUTH_ERROR = 'GEMINI_AUTH_ERROR'
 const GEMINI_RATE_LIMIT = 'GEMINI_RATE_LIMIT'
@@ -30,7 +30,7 @@ export function toUserFacingError(err: unknown): string {
   return String(err).slice(0, 200)
 }
 
-function mapToRelayError(err: unknown): { code: string; message: string } {
+function mapToRelayError(err: unknown): { code: string, message: string } {
   const msg = toUserFacingError(err)
   if (err instanceof Error) {
     const m = err.message ?? ''
@@ -45,7 +45,7 @@ function mapToRelayError(err: unknown): { code: string; message: string } {
 }
 
 export interface GeminiProvider extends StreamingProvider {
-  createChat(_workspace?: string): Promise<{ chatId: string }>
+  createChat: (_workspace?: string) => Promise<{ chatId: string }>
 }
 
 export function createGeminiProvider(config: GeminiProviderConfig = {}): GeminiProvider {
@@ -99,7 +99,9 @@ export function createGeminiProvider(config: GeminiProviderConfig = {}): GeminiP
     const ai = getClient()
     const model = request.options?.model ?? defaultModel
     let timedOut = false
-    const timeoutId = setTimeout(() => { timedOut = true }, timeoutMs)
+    const timeoutId = setTimeout(() => {
+      timedOut = true
+    }, timeoutMs)
 
     try {
       const stream = await ai.models.generateContentStream({

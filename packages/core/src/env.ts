@@ -1,6 +1,6 @@
-import { config as loadEnv } from 'dotenv'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { config as loadEnv } from 'dotenv'
 
 /**
  * Walk up from the given directory to find the repo root containing pnpm-workspace.yaml;

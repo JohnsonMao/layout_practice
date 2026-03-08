@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { Buffer } from 'node:buffer'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createCursorCliProvider } from './provider'
 
 const mockSpawn = vi.fn()
@@ -12,11 +13,14 @@ describe('createCursorCliProvider', () => {
   })
 
   it('implements Provider: execute returns Promise<RelayResponse>', async () => {
-    mockSpawn.mockImplementation((cmd: string, args: string[]) => {
+    mockSpawn.mockImplementation((_cmd: string, _args: string[]) => {
       const child = {
         stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{"text":"hi"}')) }) },
         stderr: { on: vi.fn() },
-        on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+        on: vi.fn((ev: string, fn: (code: number) => void) => {
+          if (ev === 'close')
+            setTimeout(() => fn(0), 0)
+        }),
         kill: vi.fn(),
       }
       return child
@@ -37,7 +41,10 @@ describe('createCursorCliProvider', () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('ok')) }) },
       stderr: { on: vi.fn() },
-      on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+      on: vi.fn((ev: string, fn: (code: number) => void) => {
+        if (ev === 'close')
+          setTimeout(() => fn(0), 0)
+      }),
       kill: vi.fn(),
     }))
 
@@ -59,7 +66,10 @@ describe('createCursorCliProvider', () => {
       return {
         stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{}')) }) },
         stderr: { on: vi.fn() },
-        on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+        on: vi.fn((ev: string, fn: (code: number) => void) => {
+          if (ev === 'close')
+            setTimeout(() => fn(0), 0)
+        }),
         kill: vi.fn(),
       }
     })
@@ -67,12 +77,14 @@ describe('createCursorCliProvider', () => {
     await provider.execute({ prompt: 'x', workspace: '/path/to/workspace' })
   })
 
-
   it('passes optional model and mode to CLI', async () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('{}')) }) },
       stderr: { on: vi.fn() },
-      on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+      on: vi.fn((ev: string, fn: (code: number) => void) => {
+        if (ev === 'close')
+          setTimeout(() => fn(0), 0)
+      }),
       kill: vi.fn(),
     }))
 
@@ -84,7 +96,17 @@ describe('createCursorCliProvider', () => {
     })
 
     expect(mockSpawn).toHaveBeenCalledWith('agent', [
-      '-p', 'x', '--output-format', 'text', '--trust', '--model', 'gpt-5.2', '--workspace', '/cwd', '--mode', 'plan',
+      '-p',
+      'x',
+      '--output-format',
+      'text',
+      '--trust',
+      '--model',
+      'gpt-5.2',
+      '--workspace',
+      '/cwd',
+      '--mode',
+      'plan',
     ], expect.any(Object))
   })
 
@@ -92,7 +114,10 @@ describe('createCursorCliProvider', () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('plain result')) }) },
       stderr: { on: vi.fn() },
-      on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+      on: vi.fn((ev: string, fn: (code: number) => void) => {
+        if (ev === 'close')
+          setTimeout(() => fn(0), 0)
+      }),
       kill: vi.fn(),
     }))
 
@@ -108,7 +133,10 @@ describe('createCursorCliProvider', () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('plain text output')) }) },
       stderr: { on: vi.fn() },
-      on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(0), 0) }),
+      on: vi.fn((ev: string, fn: (code: number) => void) => {
+        if (ev === 'close')
+          setTimeout(() => fn(0), 0)
+      }),
       kill: vi.fn(),
     }))
 
@@ -124,7 +152,10 @@ describe('createCursorCliProvider', () => {
     mockSpawn.mockImplementation(() => ({
       stdout: { on: vi.fn() },
       stderr: { on: vi.fn((_, fn: (b: Buffer) => void) => { fn(Buffer.from('error message')) }) },
-      on: vi.fn((ev: string, fn: (code: number) => void) => { if (ev === 'close') setTimeout(() => fn(1), 0) }),
+      on: vi.fn((ev: string, fn: (code: number) => void) => {
+        if (ev === 'close')
+          setTimeout(() => fn(1), 0)
+      }),
       kill: vi.fn(),
     }))
 
