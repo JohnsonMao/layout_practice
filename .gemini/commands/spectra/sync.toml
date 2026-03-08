@@ -1,5 +1,4 @@
 description = "Sync delta specs to main specs"
-
 prompt = """
 Sync delta specs from a change to main specs.
 

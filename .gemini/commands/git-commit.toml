@@ -1,5 +1,4 @@
 description = "Generate a Conventional Commit message based on staged changes (English, 50 chars limit)"
-
 prompt = """
 When the user invokes this command, follow these steps to generate a Git Commit Message:
 

@@ -1,5 +1,4 @@
 description = "Verify implementation matches artifacts"
-
 prompt = """
 Verify that an implementation matches the change artifacts (specs, tasks, design).
 

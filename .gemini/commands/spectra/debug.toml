@@ -1,5 +1,4 @@
 description = "Systematically debug a problem using a four-phase workflow"
-
 prompt = """
 Systematically debug a problem using a four-phase workflow.
 

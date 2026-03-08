@@ -1,5 +1,4 @@
 description = "Analyze artifact consistency before implementation"
-
 prompt = """
 Analyze artifact consistency for a change. Can be invoked directly or triggered automatically when all artifacts are complete.
 

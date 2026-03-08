@@ -1,5 +1,4 @@
 description = "Clarify ambiguities in artifacts through structured questioning"
-
 prompt = """
 Clarify ambiguities in change artifacts through structured questioning. This is a passive skill — invoke it when you detect unclear requirements, vague language, or contradictions while working on a change.
 

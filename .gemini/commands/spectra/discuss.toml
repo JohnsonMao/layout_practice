@@ -1,5 +1,4 @@
 description = "Have a focused discussion about a topic and reach a conclusion"
-
 prompt = """
 Have a focused discussion about a topic and reach a conclusion.
 

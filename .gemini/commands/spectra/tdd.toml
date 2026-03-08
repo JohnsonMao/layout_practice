@@ -1,5 +1,4 @@
 description = "Follow TDD discipline - write failing tests first, then implement"
-
 prompt = """
 Follow Test-Driven Development discipline for implementation.
 

@@ -1,5 +1,4 @@
 description = "Implement tasks from an OpenSpec change"
-
 prompt = """
 Implement tasks from an OpenSpec change.
 
