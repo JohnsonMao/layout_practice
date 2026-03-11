@@ -22,3 +22,4 @@ temp
 apps/discord-bot/data/
 .spectra/
 openspec/.vector-search.db*
+*.sqlite

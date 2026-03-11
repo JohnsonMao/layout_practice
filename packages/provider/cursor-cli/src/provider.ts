@@ -83,6 +83,8 @@ function parseStreamLine(line: string): StreamChunk | null {
   try {
     const event = JSON.parse(trimmed) as CursorStreamEvent
 
+    // process.stdout.write(`==========\n ${JSON.stringify(event, null, 2)}...\n`)
+
     switch (event.type) {
       case 'system': {
         const sessionId = event.session_id

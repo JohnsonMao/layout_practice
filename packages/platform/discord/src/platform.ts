@@ -109,7 +109,7 @@ export class PlatformDiscord implements Platform {
     })
   }
 
-  private async runStreamWithThrottle(
+  private async runStream(
     stream: AsyncGenerator<StreamChunk, void, undefined>,
     options: {
       thread: ThreadChannel
@@ -135,7 +135,9 @@ export class PlatformDiscord implements Platform {
           break
         }
         case 'text':
-          await editThenNewThinking(chunk.text)
+          if (chunk.text.trim()) {
+            await editThenNewThinking(chunk.text)
+          }
           break
         case 'tool_call': {
           const name = chunk.toolName ?? 'tool'
@@ -233,7 +235,7 @@ export class PlatformDiscord implements Platform {
     })
 
     try {
-      const { success, error } = await this.runStreamWithThrottle(stream, {
+      const { success, error } = await this.runStream(stream, {
         thread,
         statusMsgRef,
       })

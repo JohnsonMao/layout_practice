@@ -13,6 +13,7 @@ const FLAGS = {
 }
 
 export async function loadPlatforms(): Promise<Platform[]> {
+  process.stdout.write(`[RelayService] RELAY_PLATFORMS from env: "${process.env.RELAY_PLATFORMS ?? ''}"\n`)
   const enabledNames = (process.env.RELAY_PLATFORMS ?? '')
     .split(',')
     .map(s => s.trim().toLowerCase())

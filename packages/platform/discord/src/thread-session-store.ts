@@ -70,8 +70,13 @@ export async function getSession(threadId: string): Promise<ThreadSession | null
   stmt.free()
   if (!row)
     return null
-  const provider: RelayProviderType
-    = row.provider === 'copilot-sdk' ? 'copilot-sdk' : 'cursor-cli'
+
+  // Ensure provider is a valid RelayProviderType or undefined
+  let provider: RelayProviderType | undefined
+  if (row.provider === 'cursor-cli' || row.provider === 'copilot-sdk' || row.provider === 'gemini') {
+    provider = row.provider as RelayProviderType
+  }
+
   return {
     sessionId: row.sessionId,
     workspace: row.workspace ?? process.cwd(),

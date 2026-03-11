@@ -1,4 +1,5 @@
 schema: spec-driven
+locale: tw
 
 # Project context — 建立 artifact 時會提供給 AI
 context: |

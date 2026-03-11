@@ -14,7 +14,7 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsup",
-    "test": "vitest"
+    "test": "vitest run --reporter=dot"
   },
   "dependencies": {
     "dotenv": "catalog:prod"

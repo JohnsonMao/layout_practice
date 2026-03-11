@@ -1,6 +1,11 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import dotenv from 'dotenv'
 import { createRelayContext } from './context'
 import { loadPlatforms, stopAll } from './loader'
-import 'dotenv/config'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
 
 async function main() {
   process.stdout.write('[RelayService] Starting...\n')

@@ -9,3 +9,15 @@ export const data = new SlashCommandBuilder()
       .setDescription('Thread title')
       .setRequired(true),
   )
+  .addStringOption(option =>
+    option
+      .setName('workspace')
+      .setDescription('Absolute path to workspace (optional)')
+      .setRequired(false),
+  )
+  .addStringOption(option =>
+    option
+      .setName('model')
+      .setDescription('AI model ID (optional)')
+      .setRequired(false),
+  )

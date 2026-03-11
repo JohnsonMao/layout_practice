@@ -21,14 +21,14 @@ describe('runRelay', () => {
   })
 
   it('returns success with collected text', async () => {
-    const outcome = await runRelay('hello', process.cwd(), mockContext)
+    const outcome = await runRelay('hello', mockContext, process.cwd())
     expect(outcome.success).toBe(true)
     if (outcome.success)
       expect(outcome.result).toBe('Hello')
   })
 
   it('returns user-facing error when stream yields error chunk', async () => {
-    const outcome = await runRelay('fail', process.cwd(), mockContext)
+    const outcome = await runRelay('fail', mockContext, process.cwd())
     expect(outcome.success).toBe(false)
     if (!outcome.success)
       expect(outcome.userMessage).toBe('User-facing error')
