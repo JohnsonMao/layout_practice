@@ -11,7 +11,8 @@
     "check": "turbo run build test --output-logs=errors-only",
     "dev:discord": "pnpm --filter discord-bot dev",
     "dev:slack": "pnpm --filter slack-bot dev",
-    "deploy:discord": "pnpm --filter discord-bot deploy-commands"
+    "deploy:discord": "pnpm --filter discord-bot deploy-commands",
+    "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",

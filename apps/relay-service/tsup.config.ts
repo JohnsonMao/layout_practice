@@ -16,12 +16,17 @@ const isAll = relayPlatforms.length === 0
 export default defineConfig({
   entry: ['src/index.ts'],
   format: ['esm'],
+  platform: 'node',
+  shims: true,
   clean: true,
   sourcemap: true,
   outDir: 'dist',
   define: {
     ENABLE_PLATFORM_DISCORD: String(isAll || relayPlatforms.includes('discord')),
     ENABLE_PLATFORM_GITHUB: String(isAll || relayPlatforms.includes('github')),
+  },
+  banner: {
+    js: 'import { createRequire } from "module";const require = createRequire(import.meta.url);',
   },
   noExternal: [
     '@agent-relay/core',

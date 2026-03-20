@@ -5,7 +5,10 @@ import { createRelayContext } from './context'
 import { loadPlatforms, stopAll } from './loader'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+// Try loading from workspace root (for dev)
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') })
+// Try loading from current directory (for prod/docker where .env is mounted)
+dotenv.config()
 
 async function main() {
   process.stdout.write('[RelayService] Starting...\n')

@@ -7,5 +7,17 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   outDir: 'dist',
-  external: ['@agent-relay/core'],
+  minify: false,
+  splitting: false,
+  external: [
+    '@agent-relay/core',
+    'dotenv',
+    'discord.js',
+    'sql.js',
+    '@octokit/rest',
+    '@octokit/webhooks',
+    '@google/genai',
+    'vscode-jsonrpc',
+    'zod',
+  ],
 })
