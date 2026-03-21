@@ -14,6 +14,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "deploy-commands": "tsx ./src/deploy-commands.ts",
     "test": "vitest run --reporter=dot",
     "typecheck": "tsc --noEmit"
   },
@@ -27,6 +28,7 @@
     "@types/node": "catalog:dev",
     "@types/sql.js": "catalog:dev",
     "tsup": "catalog:dev",
+    "tsx": "catalog:dev",
     "typescript": "catalog:dev",
     "vitest": "catalog:dev"
   }

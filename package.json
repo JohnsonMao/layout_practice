@@ -9,9 +9,10 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "check": "turbo run build test --output-logs=errors-only",
-    "dev:discord": "pnpm --filter discord-bot dev",
-    "dev:slack": "pnpm --filter slack-bot dev",
-    "deploy:discord": "pnpm --filter discord-bot deploy-commands",
+    "dev:relay": "pnpm --filter relay-service dev",
+    "dev:discord": "RELAY_PLATFORMS=discord pnpm --filter relay-service dev",
+    "dev:github": "RELAY_PLATFORMS=github pnpm --filter relay-service dev",
+    "deploy:discord": "pnpm --filter @agent-relay/platform-discord deploy-commands",
     "typecheck": "turbo run typecheck"
   },
   "devDependencies": {
