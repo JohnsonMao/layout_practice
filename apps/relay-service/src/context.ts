@@ -37,7 +37,7 @@ export function createRelayContext(): RelayContext {
   const relayCopilot = providerCopilot ? createRelay({ provider: providerCopilot }) : null
   const relayGemini = providerGemini ? createRelay({ provider: providerGemini }) : null
 
-  let activeCreateChatProvider: any
+  let activeCreateChatProvider: object | null
   if (relayProvider === 'copilot-sdk') {
     activeCreateChatProvider = providerCopilot!
   }

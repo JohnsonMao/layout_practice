@@ -13,7 +13,7 @@ const RATE_LIMIT_MESSAGE = '請求過於頻繁，請稍後再試'
 export class PlatformGitHub implements Platform {
   readonly name = 'github'
   private octokit: Octokit | null = null
-  private server: any = null // The return of createWebhookServer
+  private server: object | null = null // The return of createWebhookServer
   private ctx: RelayContext | null = null
 
   async init(ctx: RelayContext): Promise<void> {

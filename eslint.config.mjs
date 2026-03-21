@@ -16,6 +16,7 @@ export default antfu({
   rules: {
     'node/prefer-global/process': 'off',
     'no-nested-ternary': 'warn',
+    'ts/no-explicit-any': 'error',
   },
   typescript: {
     parserOptions: {
