@@ -10,7 +10,9 @@
     "lint:fix": "turbo run lint:fix",
     "check": "turbo run lint typecheck test --output-logs=errors-only",
     "deploy:discord": "pnpm --filter @agent-relay/platform-discord deploy-commands",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "dev:desktop": "turbo run dev --filter=desktop",
+    "build:desktop": "turbo run build --filter=desktop"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:dev",

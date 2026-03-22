@@ -1,7 +1,6 @@
 packages:
-  - apps/relay-service
-  - packages/config
-  - packages/core
+  - 'apps/*'
+  - 'packages/core'
   - 'packages/platform/*'
   - 'packages/provider/*'
 
