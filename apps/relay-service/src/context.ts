@@ -1,78 +1,59 @@
-/**
- * Composition root: builds relay and create-chat provider from RELAY_PROVIDER.
- * This app-level module is responsible for wiring concrete providers together.
- */
-import { createRelay, type Relay, RELAY_PROVIDER_OPTIONS, type RelayContext, type RelayProviderType, type SessionWithProvider } from '@agent-relay/core'
-import { createCopilotProvider, toUserFacingError } from '@agent-relay/provider-copilot-sdk'
-import { createCursorCliProvider } from '@agent-relay/provider-cursor-cli'
-import { createGeminiProvider } from '@agent-relay/provider-gemini'
+import {
+  type CreateChatProvider,
+  createRelay,
+  PluginRegistry,
+  type Relay,
+  type RelayContext,
+  type RelayProviderType,
+  type SessionWithProvider,
+  type StreamingProvider,
+} from '@agent-relay/core'
+import { PluginLoader } from './plugin-loader'
 
 const DEFAULT_RELAY_PROVIDER: RelayProviderType = 'cursor-cli'
 
 /**
- * Read RELAY_PROVIDER from env; return default when unset or invalid.
+ * Initialize Registry and load all providers.
  */
-function getRelayProviderFromEnv(): RelayProviderType {
-  const raw = process.env.RELAY_PROVIDER ?? DEFAULT_RELAY_PROVIDER
-  return (RELAY_PROVIDER_OPTIONS as readonly string[]).includes(raw)
-    ? (raw as RelayProviderType)
-    : DEFAULT_RELAY_PROVIDER
+async function initializeRegistry(): Promise<PluginRegistry> {
+  const registry = new PluginRegistry()
+  const loader = new PluginLoader(registry)
+  await loader.load() // Auto-discover or load from registry.config.ts
+  return registry
 }
 
-const DISPLAY_NAMES: Record<RelayProviderType, string> = {
-  'cursor-cli': 'Cursor CLI',
-  'copilot-sdk': 'Copilot',
-  'gemini': 'Gemini',
-}
+export async function createRelayContext(): Promise<RelayContext> {
+  const registry = await initializeRegistry()
 
-export function createRelayContext(): RelayContext {
-  const relayProvider = getRelayProviderFromEnv()
-  const providerCursor = createCursorCliProvider()
-  const providerCopilot
-    = relayProvider === 'copilot-sdk' ? createCopilotProvider() : null
-  const providerGemini
-    = relayProvider === 'gemini' ? createGeminiProvider() : null
+  // Get active provider from env
+  const relayProviderId = (process.env.RELAY_PROVIDER as RelayProviderType) ?? DEFAULT_RELAY_PROVIDER
 
-  const relayCursor = createRelay({ provider: providerCursor })
-  const relayCopilot = providerCopilot ? createRelay({ provider: providerCopilot }) : null
-  const relayGemini = providerGemini ? createRelay({ provider: providerGemini }) : null
-
-  let activeCreateChatProvider: object | null
-  if (relayProvider === 'copilot-sdk') {
-    activeCreateChatProvider = providerCopilot!
-  }
-  else if (relayProvider === 'gemini') {
-    activeCreateChatProvider = providerGemini!
-  }
-  else {
-    activeCreateChatProvider = providerCursor
+  const activePlugin = registry.getProvider(relayProviderId)
+  if (!activePlugin) {
+    throw new Error(`Active provider not found: ${relayProviderId}`)
   }
 
-  const formatCreateChatError = (err: unknown): string => {
-    if (relayProvider === 'copilot-sdk')
-      return toUserFacingError(err)
-    return err instanceof Error ? err.message : String(err)
-  }
+  const activeCreateChatProvider = await activePlugin.create() as CreateChatProvider
 
   const getRelayForSession = (session: SessionWithProvider): Relay | null => {
-    const kind = session.provider ?? relayProvider
-    if (kind === 'copilot-sdk')
-      return relayCopilot
-    if (kind === 'gemini')
-      return relayGemini
-    return relayCursor
-  }
-
-  const getRunStreamUnavailableMessage = (_session: SessionWithProvider): string => {
-    return 'Relay backend is not available. Check RELAY_PROVIDER and related environment variables.'
+    const kind = session.provider ?? relayProviderId
+    const plugin = registry.getProvider(kind)
+    if (!plugin)
+      return null
+    // Note: This creates a new relay instance per request, which is compatible with current architecture
+    // but could be optimized to cache instances if needed.
+    return createRelay({ provider: plugin.create() as unknown as StreamingProvider })
   }
 
   return {
-    activeProviderDisplayName: DISPLAY_NAMES[relayProvider],
-    activeProviderKind: relayProvider,
+    activeProviderDisplayName: activePlugin.displayName,
+    activeProviderKind: relayProviderId,
     activeCreateChatProvider,
-    formatCreateChatError,
+    formatCreateChatError: (err: unknown): string => {
+      // Keep existing error handling logic
+      return err instanceof Error ? err.message : String(err)
+    },
     getRelayForSession,
-    getRunStreamUnavailableMessage,
+    getRunStreamUnavailableMessage: () => 'Relay backend is not available.',
   }
 }

@@ -16,7 +16,9 @@
     "build": "tsup",
     "deploy-commands": "tsx ./src/deploy-commands.ts",
     "test": "vitest run --reporter=dot",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@agent-relay/core": "workspace:*",

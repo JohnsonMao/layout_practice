@@ -22,6 +22,8 @@
     "deploy-commands": {
       "cache": false
     },
+    "lint": {},
+    "lint:fix": {},
     "typecheck": {
       "dependsOn": [
         "^build"

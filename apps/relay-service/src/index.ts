@@ -13,7 +13,7 @@ dotenv.config()
 async function main() {
   process.stdout.write('[RelayService] Starting...\n')
 
-  const ctx = createRelayContext()
+  const ctx = await createRelayContext()
   const platforms = await loadPlatforms()
   if (platforms.length === 0) {
     console.error('[RelayService] No active platforms. Exiting.')

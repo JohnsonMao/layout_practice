@@ -15,7 +15,9 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run --reporter=dot",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@agent-relay/core": "workspace:*"

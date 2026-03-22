@@ -1,5 +1,6 @@
 import type { Platform, RelayContext } from '@agent-relay/core'
 import type { Octokit } from '@octokit/rest'
+import type { Server } from 'node:http'
 import { getConfig } from './config'
 import { createOctokit, postComment } from './github'
 import { parseWebhookPayload } from './payload'
@@ -13,7 +14,7 @@ const RATE_LIMIT_MESSAGE = '請求過於頻繁，請稍後再試'
 export class PlatformGitHub implements Platform {
   readonly name = 'github'
   private octokit: Octokit | null = null
-  private server: object | null = null // The return of createWebhookServer
+  private server: Server | null = null
   private ctx: RelayContext | null = null
 
   async init(ctx: RelayContext): Promise<void> {
@@ -102,8 +103,14 @@ export class PlatformGitHub implements Platform {
   }
 
   async stop(): Promise<void> {
-    if (this.server && this.server.close) {
-      await new Promise<void>(resolve => this.server.close(() => resolve()))
+    if (this.server) {
+      await new Promise<void>((resolve, reject) => {
+        this.server!.close((err) => {
+          if (err)
+            reject(err)
+          else resolve()
+        })
+      })
       this.server = null
     }
   }

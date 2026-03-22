@@ -1,4 +1,5 @@
 export { findRepoRoot, loadEnvFromRepoRoot } from './env'
+export * from './registry'
 export { createRelay, type Relay } from './relay'
 export type {
   CreateChatProvider,

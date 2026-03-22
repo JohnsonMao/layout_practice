@@ -10,7 +10,7 @@ import {
 } from 'discord.js'
 import { getConfig, truncateForDiscord } from './config'
 import { createRateLimiter } from './rate-limit'
-import { deleteSession, getSession, setSession } from './thread-session-store'
+import { deleteSession, getSession, setSession, type ThreadSession } from './thread-session-store'
 
 const RATE_LIMIT_PER_MIN = 5
 const THINKING_LABEL = '💭 Thinking...'
@@ -207,7 +207,7 @@ export class PlatformDiscord implements Platform {
     thread: ThreadChannel,
     content: string,
     userId: string,
-    session: { sessionId: string, workspace?: string, model?: string, provider?: string },
+    session: ThreadSession,
   ): Promise<void> {
     if (!this.rateLimiter.check(userId)) {
       await thread.send('⏱️ Rate limit exceeded. Please try again later (max 5 per minute).').catch(() => {})
