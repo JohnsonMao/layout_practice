@@ -136,7 +136,7 @@ export interface RelayContext {
   /** Format errors from the active provider into user-facing messages. */
   formatCreateChatError: (err: unknown) => string
   /** Return the Relay for the session's provider; null if that provider is not enabled. */
-  getRelayForSession: (session: SessionWithProvider) => import('./relay').Relay | null
+  getRelayForSession: (session: SessionWithProvider) => Promise<import('./relay').Relay | null>
   /** User-facing message when getRelayForSession(session) is null. */
   getRunStreamUnavailableMessage: (session: SessionWithProvider) => string
 }

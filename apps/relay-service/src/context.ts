@@ -6,7 +6,6 @@ import {
   type RelayContext,
   type RelayProviderType,
   type SessionWithProvider,
-  type StreamingProvider,
 } from '@agent-relay/core'
 import { PluginLoader } from './plugin-loader'
 
@@ -35,14 +34,14 @@ export async function createRelayContext(): Promise<RelayContext> {
 
   const activeCreateChatProvider = await activePlugin.create() as CreateChatProvider
 
-  const getRelayForSession = (session: SessionWithProvider): Relay | null => {
+  const getRelayForSession = async (session: SessionWithProvider): Promise<Relay | null> => {
     const kind = session.provider ?? relayProviderId
     const plugin = registry.getProvider(kind)
     if (!plugin)
       return null
-    // Note: This creates a new relay instance per request, which is compatible with current architecture
-    // but could be optimized to cache instances if needed.
-    return createRelay({ provider: plugin.create() as unknown as StreamingProvider })
+    // Await the creation of the provider instance
+    const provider = await plugin.create()
+    return createRelay({ provider })
   }
 
   return {

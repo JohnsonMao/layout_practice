@@ -9,7 +9,7 @@ export type RelayOutcome =
  * Consumes runStream and collects text; on error returns user-facing message without internal details.
  */
 export async function runRelay(prompt: string, ctx: RelayContext, workspace?: string): Promise<RelayOutcome> {
-  const relay = ctx.getRelayForSession({})
+  const relay = await ctx.getRelayForSession({})
   if (!relay) {
     return { success: false, userMessage: ctx.getRunStreamUnavailableMessage({}) }
   }

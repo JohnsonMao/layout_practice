@@ -221,7 +221,7 @@ export class PlatformDiscord implements Platform {
     if (!this.ctx)
       return
 
-    const relay = this.ctx.getRelayForSession(session)
+    const relay = await this.ctx.getRelayForSession(session)
     if (!relay) {
       await thread.send(`❌ ${this.ctx.getRunStreamUnavailableMessage(session)}`).catch(() => {})
       this.processingThreadIds.delete(thread.id)
