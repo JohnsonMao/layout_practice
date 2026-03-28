@@ -8,6 +8,7 @@ pub struct GeminiProvider;
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type")]
+#[allow(dead_code)]
 pub enum GeminiStreamEvent {
     #[serde(rename = "chunk")]
     Chunk { content: String },
@@ -79,17 +80,21 @@ impl CliProvider for GeminiProvider {
             GeminiStreamEvent::Chunk { content } | GeminiStreamEvent::Text { content } => {
                 Some(RelayEvent::Text(content))
             }
+            GeminiStreamEvent::Thought { content: _ } => {
+                // Internal thought - not sent to frontend
+                None
+            }
             GeminiStreamEvent::System { session_id, model } => {
                 Some(RelayEvent::System { session_id, model })
             }
-            GeminiStreamEvent::Call { tool, .. } => {
+            GeminiStreamEvent::Call { tool, args: _ } => {
                 Some(RelayEvent::ToolCall { 
                     name: tool, 
                     completed: false, 
                     rejected: None 
                 })
             }
-            GeminiStreamEvent::Response { tool, .. } => {
+            GeminiStreamEvent::Response { tool, content: _ } => {
                 Some(RelayEvent::ToolCall { 
                     name: tool, 
                     completed: true, 
@@ -99,10 +104,13 @@ impl CliProvider for GeminiProvider {
             GeminiStreamEvent::Error { code, message } => {
                 Some(RelayEvent::Error { code, message })
             }
+            GeminiStreamEvent::Usage { tokens: _, cost: _ } => {
+                // Usage statistics - not currently sent to frontend
+                None
+            }
             GeminiStreamEvent::Done => {
                 Some(RelayEvent::Done)
             }
-            _ => None,
         }
     }
 }
