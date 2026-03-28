@@ -1,27 +1,65 @@
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-// 假設生成的型別路徑
-// import type { AppStatus } from "./types/generated"; 
+import { commands, events, RelayEvent, AppStatus } from "./types/bindings";
 import "./App.css";
 
 function App() {
-  const [status, setStatus] = useState<{ is_running: boolean, version: String } | null>(null);
+  const [status, setStatus] = useState<AppStatus | null>(null);
+  const [prompt, setPrompt] = useState("Hello, who are you?");
+  const [response, setResponse] = useState("");
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 呼叫 Rust 指令獲取初始狀態
-    invoke<{ is_running: boolean, version: String }>("get_app_status").then(setStatus);
+    commands.getAppStatus().then(setStatus);
 
-    // 監聽 Rust 發送的事件
-    const unlisten = listen<{ is_running: boolean, version: String }>("status_checked", (event) => {
-      console.log("Status checked event received:", event.payload);
-      setStatus(event.payload);
+    // 使用 tauri-specta 生成的 events 監聽
+    const unlisten = events.relayEvent.listen((event) => {
+      const payload: RelayEvent = event.payload;
+      console.log("Relay event:", payload);
+
+      switch (payload.type) {
+        case "text":
+          setResponse((prev) => prev + payload.data);
+          break;
+        case "system":
+          setSessionId(payload.data.session_id);
+          break;
+        case "tool_call":
+          console.log(`Tool call: ${payload.data.name} (completed: ${payload.data.completed})`);
+          break;
+        case "error":
+          setError(`${payload.data.code}: ${payload.data.message}`);
+          setIsLoading(false);
+          break;
+        case "done":
+          setIsLoading(false);
+          break;
+      }
     });
 
     return () => {
       unlisten.then(f => f());
     };
   }, []);
+
+  const handleRunRelay = async () => {
+    setResponse("");
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const res = await commands.runCliRelay("cursor", prompt, sessionId, null);
+      if (res.status === "error") {
+        setError(res.error);
+        setIsLoading(false);
+      }
+      // Success is handled via events
+    } catch (err) {
+      setError(String(err));
+      setIsLoading(false);
+    }
+  };
 
   return (
     <main className="container">
@@ -42,9 +80,43 @@ function App() {
       </div>
 
       <div className="card">
-        <button onClick={() => invoke("get_app_status").then(setStatus)}>
-          Refresh Status
-        </button>
+        <h2>AI Relay (Rust Backend)</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <textarea 
+            value={prompt} 
+            onChange={(e) => setPrompt(e.target.value)}
+            disabled={isLoading}
+            rows={3}
+            style={{ width: '100%', padding: '8px' }}
+          />
+          <button onClick={handleRunRelay} disabled={isLoading}>
+            {isLoading ? "Running..." : "Send to Cursor CLI"}
+          </button>
+        </div>
+
+        {error && (
+          <div style={{ color: 'red', marginTop: '10px', padding: '8px', border: '1px solid red' }}>
+            {error}
+          </div>
+        )}
+
+        {sessionId && (
+          <div style={{ marginTop: '10px', fontSize: '0.8em', color: '#666' }}>
+            Session ID: {sessionId}
+          </div>
+        )}
+
+        <div style={{ 
+          marginTop: '20px', 
+          padding: '15px', 
+          background: '#f4f4f4', 
+          borderRadius: '4px',
+          minHeight: '100px',
+          whiteSpace: 'pre-wrap',
+          textAlign: 'left'
+        }}>
+          {response || (isLoading ? "..." : "Response will appear here...")}
+        </div>
       </div>
     </main>
   );

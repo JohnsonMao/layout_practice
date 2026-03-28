@@ -18,13 +18,30 @@ The provider SHALL execute user prompts by invoking the Cursor CLI in non-intera
 #### Scenario: CLI not found
 
 - **WHEN** the Cursor CLI binary is not in PATH or not installed
-- **THEN** the provider SHALL return an error response with a code such as CURSOR_CLI_NOT_FOUND and a message indicating the user should install the CLI
+- **THEN** the provider SHALL return an error response with a code such as CURSOR_CLI_NOT_FOUND and a message indicating the user SHALL install the CLI
 
 #### Scenario: workspace passed to CLI and spawn
 
 - **WHEN** execute or executeStream is called with a request
 - **THEN** the provider SHALL invoke the CLI with `--workspace <request.workspace>` and SHALL spawn the process with `cwd: request.workspace`
 
+
+<!-- @trace
+source: refactor-ai-cli-relay-to-rust
+updated: 2026-03-28
+code:
+  - apps/desktop/src-tauri/src/providers/copilot.rs
+  - apps/desktop/src-tauri/src/providers/cursor.rs
+  - apps/desktop/src-tauri/src/engine.rs
+  - apps/desktop/src-tauri/src/lib.rs
+  - apps/desktop/src/App.tsx
+  - apps/desktop/src/types/bindings.ts
+  - apps/desktop/src-tauri/Cargo.toml
+  - apps/desktop/src-tauri/src/providers/gemini.rs
+  - apps/desktop/src-tauri/src/providers/mod.rs
+-->
+
+---
 ### Requirement: Output format handling
 
 The provider SHALL request CLI output in a parseable format (e.g. `--output-format json`) when supported. If the CLI returns non-JSON or the format is unsupported, the provider SHALL treat the raw stdout as the result string.
@@ -39,6 +56,7 @@ The provider SHALL request CLI output in a parseable format (e.g. `--output-form
 - **WHEN** the CLI returns plain text or invalid JSON
 - **THEN** the provider SHALL return the raw stdout as the result string so the relay still returns a usable response
 
+---
 ### Requirement: Optional model and mode
 
 The provider SHALL pass through optional `model` and `mode` from the relay request to the Cursor CLI when present (e.g. `--model`, `--mode=plan`). The provider MAY ignore unsupported values and use CLI defaults.
@@ -53,6 +71,7 @@ The provider SHALL pass through optional `model` and `mode` from the relay reque
 - **WHEN** the request has no options
 - **THEN** the provider SHALL invoke the CLI without model or mode flags so the CLI uses its defaults
 
+---
 ### Requirement: Timeout and failure handling
 
 The provider SHALL enforce a configurable timeout for CLI execution. If the CLI exits with a non-zero code or times out, the provider SHALL return an error response with an appropriate code and message.
@@ -67,6 +86,7 @@ The provider SHALL enforce a configurable timeout for CLI execution. If the CLI 
 - **WHEN** the CLI does not complete within the configured timeout
 - **THEN** the provider SHALL terminate the process and return an error response with a timeout error code
 
+---
 ### Requirement: Streaming execution
 
 The cursor-cli provider SHALL implement StreamingProvider by providing executeStream(request) that runs the CLI with stream-json output and yields StreamChunk values.
@@ -96,6 +116,23 @@ The cursor-cli provider SHALL implement StreamingProvider by providing executeSt
 - **WHEN** the child process errors (e.g. ENOENT) or exits non-zero
 - **THEN** the provider SHALL yield a StreamChunk of type "error" with appropriate code and message
 
+
+<!-- @trace
+source: refactor-ai-cli-relay-to-rust
+updated: 2026-03-28
+code:
+  - apps/desktop/src-tauri/src/providers/copilot.rs
+  - apps/desktop/src-tauri/src/providers/cursor.rs
+  - apps/desktop/src-tauri/src/engine.rs
+  - apps/desktop/src-tauri/src/lib.rs
+  - apps/desktop/src/App.tsx
+  - apps/desktop/src/types/bindings.ts
+  - apps/desktop/src-tauri/Cargo.toml
+  - apps/desktop/src-tauri/src/providers/gemini.rs
+  - apps/desktop/src-tauri/src/providers/mod.rs
+-->
+
+---
 ### Requirement: Create chat
 
 The provider SHALL expose createChat(workspace?: string) that invokes the Cursor CLI subcommand `agent create-chat` and returns the new chat ID. When workspace is provided and non-empty, the provider SHALL pass `--workspace <workspace>` to the CLI and SHALL use that path as the spawn process cwd.
@@ -115,6 +152,7 @@ The provider SHALL expose createChat(workspace?: string) that invokes the Cursor
 - **WHEN** the create-chat process exits non-zero or stdout is empty
 - **THEN** the provider SHALL throw an error with a message derived from stderr or exit code
 
+---
 ### Requirement: List models
 
 The provider SHALL expose listModels() that invokes the Cursor CLI subcommand `agent models` and returns an array of model IDs (strings). The provider SHALL parse the CLI stdout: skip a header line such as "Available models", and for each subsequent line SHALL take the segment before the first " - " as the model ID.
@@ -128,3 +166,26 @@ The provider SHALL expose listModels() that invokes the Cursor CLI subcommand `a
 
 - **WHEN** the models process exits non-zero
 - **THEN** the provider SHALL throw an error with a message derived from stderr or exit code
+
+---
+### Requirement: Rust Implementation Support
+The system SHALL support a Rust native implementation of the Cursor CLI provider for the desktop application backend, fulfilling the same streaming and execution requirements as the TypeScript provider.
+
+#### Scenario: Rust execution
+- **WHEN** the Tauri backend invokes the Rust `CursorProvider`
+- **THEN** the provider SHALL spawn the CLI and parse the streaming output according to the established `RelayEvent` protocol
+
+<!-- @trace
+source: refactor-ai-cli-relay-to-rust
+updated: 2026-03-28
+code:
+  - apps/desktop/src-tauri/src/providers/copilot.rs
+  - apps/desktop/src-tauri/src/providers/cursor.rs
+  - apps/desktop/src-tauri/src/engine.rs
+  - apps/desktop/src-tauri/src/lib.rs
+  - apps/desktop/src/App.tsx
+  - apps/desktop/src/types/bindings.ts
+  - apps/desktop/src-tauri/Cargo.toml
+  - apps/desktop/src-tauri/src/providers/gemini.rs
+  - apps/desktop/src-tauri/src/providers/mod.rs
+-->

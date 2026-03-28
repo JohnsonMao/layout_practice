@@ -1,17 +1,31 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{TrayIconBuilder, TrayIconEvent},
-    Emitter, Manager,
+    Emitter, Manager, Window,
+};
+use specta_typescript::Typescript;
+use tauri_specta::{collect_commands, collect_events, Builder};
+
+mod providers;
+mod engine;
+
+use providers::{
+    cursor::CursorProvider, 
+    gemini::GeminiProvider, 
+    copilot::CopilotProvider, 
+    CliProvider, 
+    RelayEvent
 };
 
 // 範例資料結構
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, specta::Type)]
 pub struct AppStatus {
     pub is_running: bool,
     pub version: String,
 }
 
 #[tauri::command]
+#[specta::specta]
 fn get_app_status(app_handle: tauri::AppHandle) -> AppStatus {
     let status = AppStatus {
         is_running: true,
@@ -24,8 +38,36 @@ fn get_app_status(app_handle: tauri::AppHandle) -> AppStatus {
     status
 }
 
+#[tauri::command]
+#[specta::specta]
+async fn run_cli_relay(
+    window: Window<tauri::Wry>,
+    provider_name: String,
+    prompt: String,
+    session_id: Option<String>,
+    workspace: Option<String>,
+) -> Result<(), String> {
+    let provider: Box<dyn CliProvider> = match provider_name.as_str() {
+        "cursor" => Box::new(CursorProvider),
+        "gemini" => Box::new(GeminiProvider),
+        "copilot" => Box::new(CopilotProvider),
+        _ => return Err(format!("Unknown provider: {}", provider_name)),
+    };
+
+    engine::run_provider_relay(window, provider, prompt, session_id, workspace).await
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let builder = Builder::<tauri::Wry>::new()
+        .commands(collect_commands![get_app_status, run_cli_relay])
+        .events(collect_events![RelayEvent]);
+
+    #[cfg(debug_assertions)]
+    builder
+        .export(&Typescript::default(), "../src/types/bindings.ts")
+        .expect("Failed to export typescript bindings");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .setup(move |app| {
@@ -62,7 +104,7 @@ pub fn run() {
                 api.prevent_close();
             }
         })
-        .invoke_handler(tauri::generate_handler![get_app_status])
+        .invoke_handler(builder.invoke_handler())
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
